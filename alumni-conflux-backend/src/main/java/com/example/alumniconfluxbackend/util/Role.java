@@ -1,4 +1,4 @@
-package com.example.alumniconfluxbackend.common;
+package com.example.alumniconfluxbackend.util;
 
 public enum Role {
     STUDENT,
