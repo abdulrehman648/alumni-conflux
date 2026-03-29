@@ -1,15 +1,28 @@
 package com.example.alumniconfluxbackend.model;
 
-import com.example.alumniconfluxbackend.common.Role;
-import jakarta.persistence.*;
+import com.example.alumniconfluxbackend.util.Role;
+import jakarta.persistence.Column;
+import jakarta.persistence.Table;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.Entity;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 
 @Entity
-@Table(name = "user")
+@Table(name = "users")
+@Inheritance(strategy = InheritanceType.JOINED)
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
+
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
 
     @Column(nullable = false, unique = true)
     private String username;
@@ -24,11 +37,11 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    public Long getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -62,5 +75,13 @@ public class User {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 }

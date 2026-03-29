@@ -1,4 +1,4 @@
 package com.example.alumniconfluxbackend.facade;
 
-public class SingupFacade {
+public class ProfileFacade {
 }
