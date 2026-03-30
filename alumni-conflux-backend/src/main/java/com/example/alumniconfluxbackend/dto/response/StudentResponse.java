@@ -1,16 +1,44 @@
-package com.example.alumniconfluxbackend.model.details;
+package com.example.alumniconfluxbackend.dto.response;
 
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
-public class StudentDetails implements Serializable {
+public class StudentResponse {
+
+    private Integer studentId;
+    private String institutionName;
+    private Short expectedGraduationYear;
+
     private String department;
     private String degreeProgram;
     private String major;
     private Short currentSemester;
-    private List<String> skills = new ArrayList<>();
-    private List<String> careerPreferences = new ArrayList<>();
+
+    private List<String> skills;
+    private List<String> careerPreferences;
+
+    public Integer getStudentId() {
+        return studentId;
+    }
+
+    public void setStudentId(Integer studentId) {
+        this.studentId = studentId;
+    }
+
+    public String getInstitutionName() {
+        return institutionName;
+    }
+
+    public void setInstitutionName(String institutionName) {
+        this.institutionName = institutionName;
+    }
+
+    public Short getExpectedGraduationYear() {
+        return expectedGraduationYear;
+    }
+
+    public void setExpectedGraduationYear(Short expectedGraduationYear) {
+        this.expectedGraduationYear = expectedGraduationYear;
+    }
 
     public String getDepartment() {
         return department;
