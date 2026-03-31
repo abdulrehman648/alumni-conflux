@@ -9,8 +9,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.GenerationType;
+
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -41,6 +44,9 @@ public class User {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Alumni alumni;
+
+    @OneToMany(mappedBy = "applicant", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<JobApplication> jobApplications;
 
     public Integer getId() {
         return id;
@@ -104,5 +110,13 @@ public class User {
 
     public void setAlumni(Alumni alumni) {
         this.alumni = alumni;
+    }
+
+    public List<JobApplication> getJobApplications() {
+        return jobApplications;
+    }
+
+    public void setJobApplications(List<JobApplication> jobApplications) {
+        this.jobApplications = jobApplications;
     }
 }
