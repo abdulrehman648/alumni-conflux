@@ -37,4 +37,9 @@ public class AlumniController {
 
         return ResponseEntity.ok(alumniFacade.getAlumni(userId));
     }
+
+    @GetMapping
+    public ResponseEntity<java.util.List<AlumniResponse>> getAllAlumni() {
+        return ResponseEntity.ok(alumniFacade.getAllAlumni());
+    }
 }

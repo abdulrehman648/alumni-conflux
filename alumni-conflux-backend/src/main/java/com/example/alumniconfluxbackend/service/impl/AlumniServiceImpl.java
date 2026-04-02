@@ -1,5 +1,8 @@
 package com.example.alumniconfluxbackend.service.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.example.alumniconfluxbackend.dto.request.AlumniRequest;
 import com.example.alumniconfluxbackend.dto.response.AlumniResponse;
 import com.example.alumniconfluxbackend.model.Alumni;
@@ -10,6 +13,7 @@ import com.example.alumniconfluxbackend.repository.UserRepository;
 import com.example.alumniconfluxbackend.service.AlumniService;
 import com.example.alumniconfluxbackend.util.Role;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AlumniServiceImpl implements AlumniService {
@@ -17,12 +21,13 @@ public class AlumniServiceImpl implements AlumniService {
     private final UserRepository userRepository;
 
     public AlumniServiceImpl(AlumniRepository alumniRepository,
-                             UserRepository userRepository) {
+            UserRepository userRepository) {
         this.alumniRepository = alumniRepository;
         this.userRepository = userRepository;
     }
 
     @Override
+    @Transactional
     public AlumniResponse createOrUpdateAlumni(Integer userId, AlumniRequest request) {
 
         User user = userRepository.findById(userId)
@@ -44,6 +49,13 @@ public class AlumniServiceImpl implements AlumniService {
         alumni.setGraduationYear(request.getGraduationYear());
         alumni.setIndustry(request.getIndustry());
         alumni.setCurrentCompany(request.getCurrentCompany());
+
+        if (request.getFullName() != null)
+            user.setFullName(request.getFullName());
+        if (request.getUsername() != null)
+            user.setUsername(request.getUsername());
+        if (request.getEmail() != null)
+            user.setEmail(request.getEmail());
 
         AlumniDetails details = alumni.getDetails();
         if (details == null) {
@@ -71,6 +83,10 @@ public class AlumniServiceImpl implements AlumniService {
         return mapToResponse(alumni);
     }
 
+    public List<AlumniResponse> getAllAlumni() {
+        return alumniRepository.findAll().stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
     private AlumniResponse mapToResponse(Alumni a) {
 
         AlumniResponse res = new AlumniResponse();
@@ -85,6 +101,12 @@ public class AlumniServiceImpl implements AlumniService {
         res.setExperienceLevel(a.getDetails().getExperienceLevel());
         res.setSkills(a.getDetails().getSkills());
         res.setAchievements(a.getDetails().getAchievements());
+
+        if (a.getUser() != null) {
+            res.setFullName(a.getUser().getFullName());
+            res.setUsername(a.getUser().getUsername());
+            res.setEmail(a.getUser().getEmail());
+        }
 
         return res;
     }

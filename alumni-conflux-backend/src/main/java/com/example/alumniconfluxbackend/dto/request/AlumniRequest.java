@@ -3,6 +3,9 @@ package com.example.alumniconfluxbackend.dto.request;
 import java.util.List;
 
 public class AlumniRequest {
+    private String fullName;
+    private String username;
+    private String email;
     private String institutionName;
     private Short graduationYear;
     private String industry;
@@ -19,6 +22,30 @@ public class AlumniRequest {
 
     public void setInstitutionName(String institutionName) {
         this.institutionName = institutionName;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public Short getGraduationYear() {

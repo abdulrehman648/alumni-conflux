@@ -1,13 +1,12 @@
 package com.example.alumniconfluxbackend.service.impl;
 
+import com.example.alumniconfluxbackend.dto.request.JobApplicationRequest;
 import com.example.alumniconfluxbackend.dto.request.JobRequest;
 import com.example.alumniconfluxbackend.dto.response.JobApplicationResponse;
 import com.example.alumniconfluxbackend.dto.response.JobResponse;
-import com.example.alumniconfluxbackend.model.Alumni;
 import com.example.alumniconfluxbackend.model.Job;
 import com.example.alumniconfluxbackend.model.JobApplication;
 import com.example.alumniconfluxbackend.model.User;
-import com.example.alumniconfluxbackend.repository.AlumniRepository;
 import com.example.alumniconfluxbackend.repository.JobApplicationRepository;
 import com.example.alumniconfluxbackend.repository.JobRepository;
 import com.example.alumniconfluxbackend.repository.UserRepository;
@@ -15,24 +14,25 @@ import com.example.alumniconfluxbackend.service.JobService;
 import com.example.alumniconfluxbackend.util.Role;
 import org.springframework.stereotype.Service;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class JobServiceImpl implements JobService {
 
+    private static final DateTimeFormatter DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     private final JobRepository jobRepository;
     private final JobApplicationRepository jobApplicationRepository;
-    private final AlumniRepository alumniRepository;
     private final UserRepository userRepository;
 
     public JobServiceImpl(JobRepository jobRepository,
                           JobApplicationRepository jobApplicationRepository,
-                          AlumniRepository alumniRepository,
                           UserRepository userRepository) {
         this.jobRepository = jobRepository;
         this.jobApplicationRepository = jobApplicationRepository;
-        this.alumniRepository = alumniRepository;
         this.userRepository = userRepository;
     }
 
@@ -41,15 +41,12 @@ public class JobServiceImpl implements JobService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (user.getRole() != Role.ALUMNI) {
+        if (user.getRole() != Role.ALUMNI || user.getAlumni() == null) {
             throw new RuntimeException("Only ALUMNI can post jobs");
         }
 
-        Alumni alumni = alumniRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Alumni profile not found"));
-
         Job job = new Job();
-        job.setAlumni(alumni);
+        job.setAlumni(user.getAlumni());
         mapRequestToJob(request, job);
 
         jobRepository.save(job);
@@ -99,30 +96,45 @@ public class JobServiceImpl implements JobService {
 
     @Override
     public List<JobResponse> getJobsByAlumni(Integer userId) {
-        Alumni alumni = alumniRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Alumni profile not found"));
-
-        return jobRepository.findByAlumniId(alumni.getId())
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getAlumni() == null) {
+            return List.of();
+        }
+        return jobRepository.findByAlumniId(user.getAlumni().getId())
                 .stream()
                 .map(this::mapToJobResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public JobApplicationResponse applyForJob(Integer userId, Integer jobId) {
+    public List<JobResponse> searchJobsByTitle(String title) {
+        return jobRepository.findByTitleContainingIgnoreCase(title)
+                .stream()
+                .map(this::mapToJobResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public JobApplicationResponse applyForJob(Integer userId, Integer jobId, JobApplicationRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new RuntimeException("Job not found"));
 
-        if (jobApplicationRepository.existsByJobIdAndApplicantId(jobId, userId)) {
+        if (user.getStudent() == null) {
+            throw new RuntimeException("Only students can apply for jobs");
+        }
+
+        if (jobApplicationRepository.existsByJobIdAndStudent_StudentId(jobId, user.getStudent().getStudentId())) {
             throw new RuntimeException("You have already applied for this job");
         }
 
         JobApplication application = new JobApplication();
         application.setJob(job);
-        application.setApplicant(user);
+        application.setStudent(user.getStudent());
+        application.setResumeUrl(request.getResumeUrl());
 
         jobApplicationRepository.save(application);
         return mapToApplicationResponse(application);
@@ -145,10 +157,12 @@ public class JobServiceImpl implements JobService {
 
     @Override
     public List<JobApplicationResponse> getMyApplications(Integer userId) {
-        userRepository.findById(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
-        return jobApplicationRepository.findByApplicantId(userId)
+        if (user.getStudent() == null) {
+            return List.of();
+        }
+        return jobApplicationRepository.findByStudent_StudentId(user.getStudent().getStudentId())
                 .stream()
                 .map(this::mapToApplicationResponse)
                 .collect(Collectors.toList());
@@ -176,8 +190,10 @@ public class JobServiceImpl implements JobService {
         res.setJobType(job.getJobType());
         res.setSalary(job.getSalary());
         res.setApplyLink(job.getApplyLink());
-        res.setCreatedAt(job.getCreatedAt());
+        res.setCreatedAt(job.getCreatedAt() != null
+                ? job.getCreatedAt().format(DATE_FORMATTER) : null);
         res.setAlumniId(job.getAlumni().getId());
+        res.setAlumniUserId(job.getAlumni().getUser().getId());
         res.setAlumniName(job.getAlumni().getUser().getFullName());
         return res;
     }
@@ -188,10 +204,12 @@ public class JobServiceImpl implements JobService {
         res.setJobId(app.getJob().getId());
         res.setJobTitle(app.getJob().getTitle());
         res.setCompany(app.getJob().getCompany());
-        res.setApplicantId(app.getApplicant().getId());
-        res.setApplicantName(app.getApplicant().getFullName());
+        res.setApplicantId(app.getStudent().getStudentId());
+        res.setApplicantName(app.getStudent().getUser().getFullName());
         res.setStatus(app.getStatus());
-        res.setAppliedAt(app.getAppliedAt());
+        res.setResumeUrl(app.getResumeUrl());
+        res.setAppliedAt(app.getAppliedAt() != null
+                ? app.getAppliedAt().format(DATE_FORMATTER) : null);
         return res;
     }
 }

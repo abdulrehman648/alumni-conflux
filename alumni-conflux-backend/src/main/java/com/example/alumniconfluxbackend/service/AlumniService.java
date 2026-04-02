@@ -7,4 +7,5 @@ public interface AlumniService {
     AlumniResponse createOrUpdateAlumni(Integer userId, AlumniRequest request);
 
     AlumniResponse getAlumniByUserId(Integer userId);
+    java.util.List<AlumniResponse> getAllAlumni();
 }

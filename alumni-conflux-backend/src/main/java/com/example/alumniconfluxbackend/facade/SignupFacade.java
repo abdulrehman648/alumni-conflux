@@ -2,6 +2,7 @@ package com.example.alumniconfluxbackend.facade;
 
 import com.example.alumniconfluxbackend.dto.request.SignupRequest;
 import com.example.alumniconfluxbackend.model.User;
+import com.example.alumniconfluxbackend.service.OtpService;
 import com.example.alumniconfluxbackend.service.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -13,15 +14,40 @@ public class SignupFacade {
 
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final OtpService otpService;
 
-    public SignupFacade(UserService userService, PasswordEncoder passwordEncoder) {
+    public SignupFacade(UserService userService, PasswordEncoder passwordEncoder, OtpService otpService) {
         this.passwordEncoder = passwordEncoder;
         this.userService = userService;
+        this.otpService = otpService;
+    }
+
+    public void checkEmail(String email) {
+        if (userService.emailExists(email)) {
+            throw new IllegalArgumentException("Email already exists");
+        }
+        otpService.generateOtp(email);
+    }
+
+    public void checkUsername(String username) {
+        if (userService.usernameExists(username)) {
+            throw new IllegalArgumentException("Username already exists");
+        }
+    }
+
+    public void verifyOtp(String email, String otp) {
+        if (!otpService.validateOtp(email, otp, false)) {
+            throw new IllegalArgumentException("Invalid or expired OTP");
+        }
     }
 
     public User signup(SignupRequest request) {
+        if (!otpService.validateOtp(request.getEmail(), request.getOtp(), true)) {
+            throw new IllegalArgumentException("Invalid or expired OTP");
+        }
+
         if (userService.usernameExists(request.getUsername())) {
-            throw new IllegalArgumentException("Username already exists");
+             throw new IllegalArgumentException("Username already exists");
         }
         if (userService.emailExists(request.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
@@ -39,7 +65,8 @@ public class SignupFacade {
 
     public Map<String, Object> buildResponse(User savedUser) {
         return Map.of(
-                "id",   savedUser.getId(),
+                "userId",   savedUser.getId(),
+                "id",       savedUser.getId(),
                 "fullName", savedUser.getFullName(),
                 "username", savedUser.getUsername(),
                 "email",    savedUser.getEmail(),

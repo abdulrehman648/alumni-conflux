@@ -20,4 +20,8 @@ public class AlumniFacade {
     public AlumniResponse getAlumni(Integer userId) {
         return alumniService.getAlumniByUserId(userId);
     }
+
+    public java.util.List<AlumniResponse> getAllAlumni() {
+        return alumniService.getAllAlumni();
+    }
 }

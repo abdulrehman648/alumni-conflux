@@ -33,6 +33,7 @@ public class LoginFacade {
 
     private Map<String, Object> buildResponse(User user) {
         return Map.of(
+                "userId",   user.getId(),
                 "id",       user.getId(),
                 "fullName",    user.getFullName(),
                 "username", user.getUsername(),

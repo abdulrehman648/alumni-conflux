@@ -22,12 +22,14 @@ public class JobApplication {
     private Job job;
 
     @ManyToOne
-    @JoinColumn(name = "applicant_id", nullable = false)
-    private User applicant;
+    @JoinColumn(name = "student_id", nullable = false)
+    private Student student;
     
     private String status = "PENDING"; // PENDING, REVIEWING, ACCEPTED, REJECTED
     
     private LocalDateTime appliedAt = LocalDateTime.now();
+    
+    private String resumeUrl;
 
     public Integer getId() {
         return id;
@@ -45,12 +47,12 @@ public class JobApplication {
         this.job = job;
     }
 
-    public User getApplicant() {
-        return applicant;
+    public Student getStudent() {
+        return student;
     }
 
-    public void setApplicant(User applicant) {
-        this.applicant = applicant;
+    public void setStudent(Student student) {
+        this.student = student;
     }
 
     public String getStatus() {
@@ -67,5 +69,13 @@ public class JobApplication {
 
     public void setAppliedAt(LocalDateTime appliedAt) {
         this.appliedAt = appliedAt;
+    }
+
+    public String getResumeUrl() {
+        return resumeUrl;
+    }
+
+    public void setResumeUrl(String resumeUrl) {
+        this.resumeUrl = resumeUrl;
     }
 }

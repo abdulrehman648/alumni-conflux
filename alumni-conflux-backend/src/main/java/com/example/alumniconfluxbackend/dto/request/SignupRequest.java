@@ -23,6 +23,9 @@ public class SignupRequest {
         @NotNull
         private Role role;
 
+        @NotBlank
+        private String otp;
+
     public String getFullName() {
         return fullName;
     }
@@ -61,5 +64,13 @@ public class SignupRequest {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public String getOtp() {
+        return otp;
+    }
+
+    public void setOtp(String otp) {
+        this.otp = otp;
     }
 }

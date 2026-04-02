@@ -1,7 +1,5 @@
 package com.example.alumniconfluxbackend.dto.response;
 
-import java.time.LocalDateTime;
-
 public class JobApplicationResponse {
 
     private Integer id;
@@ -11,7 +9,8 @@ public class JobApplicationResponse {
     private Integer applicantId;
     private String applicantName;
     private String status;
-    private LocalDateTime appliedAt;
+    private String appliedAt;
+    private String resumeUrl;
 
     public Integer getId() {
         return id;
@@ -69,11 +68,19 @@ public class JobApplicationResponse {
         this.status = status;
     }
 
-    public LocalDateTime getAppliedAt() {
+    public String getAppliedAt() {
         return appliedAt;
     }
 
-    public void setAppliedAt(LocalDateTime appliedAt) {
+    public void setAppliedAt(String appliedAt) {
         this.appliedAt = appliedAt;
+    }
+
+    public String getResumeUrl() {
+        return resumeUrl;
+    }
+
+    public void setResumeUrl(String resumeUrl) {
+        this.resumeUrl = resumeUrl;
     }
 }

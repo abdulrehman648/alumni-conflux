@@ -4,6 +4,9 @@ import java.util.List;
 
 public class StudentRequest {
 
+    private String fullName;
+    private String username;
+    private String email;
     private String institutionName;
     private Short expectedGraduationYear;
 
@@ -21,6 +24,30 @@ public class StudentRequest {
 
     public void setInstitutionName(String institutionName) {
         this.institutionName = institutionName;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public Short getExpectedGraduationYear() {

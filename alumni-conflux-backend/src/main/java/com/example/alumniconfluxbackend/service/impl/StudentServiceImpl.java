@@ -10,6 +10,7 @@ import com.example.alumniconfluxbackend.repository.UserRepository;
 import com.example.alumniconfluxbackend.service.StudentService;
 import com.example.alumniconfluxbackend.util.Role;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class StudentServiceImpl implements StudentService {
@@ -18,12 +19,13 @@ public class StudentServiceImpl implements StudentService {
     private final UserRepository userRepository;
 
     public StudentServiceImpl(StudentRepository studentRepository,
-                              UserRepository userRepository) {
+            UserRepository userRepository) {
         this.studentRepository = studentRepository;
         this.userRepository = userRepository;
     }
 
     @Override
+    @Transactional
     public StudentResponse createOrUpdateStudent(Integer userId, StudentRequest request) {
 
         User user = userRepository.findById(userId)
@@ -44,10 +46,17 @@ public class StudentServiceImpl implements StudentService {
         student.setInstitutionName(request.getInstitutionName());
         student.setExpectedGraduationYear(request.getExpectedGraduationYear());
 
+        if (request.getFullName() != null)
+            user.setFullName(request.getFullName());
+        if (request.getUsername() != null)
+            user.setUsername(request.getUsername());
+        if (request.getEmail() != null)
+            user.setEmail(request.getEmail());
+
         StudentDetails details = student.getDetails();
-       if (details == null) {
-           details = new StudentDetails();
-       }
+        if (details == null) {
+            details = new StudentDetails();
+        }
 
         details.setDepartment(request.getDepartment());
         details.setDegreeProgram(request.getDegreeProgram());
@@ -86,6 +95,12 @@ public class StudentServiceImpl implements StudentService {
         res.setCurrentSemester(student.getDetails().getCurrentSemester());
         res.setSkills(student.getDetails().getSkills());
         res.setCareerPreferences(student.getDetails().getCareerPreferences());
+
+        if (student.getUser() != null) {
+            res.setFullName(student.getUser().getFullName());
+            res.setUsername(student.getUser().getUsername());
+            res.setEmail(student.getUser().getEmail());
+        }
 
         return res;
     }

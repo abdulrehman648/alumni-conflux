@@ -1,5 +1,6 @@
 package com.example.alumniconfluxbackend.controller;
 
+import com.example.alumniconfluxbackend.dto.request.JobApplicationRequest;
 import com.example.alumniconfluxbackend.dto.request.JobRequest;
 import com.example.alumniconfluxbackend.dto.response.JobApplicationResponse;
 import com.example.alumniconfluxbackend.dto.response.JobResponse;
@@ -71,13 +72,22 @@ public class JobController {
         return ResponseEntity.ok(jobFacade.getJobsByAlumni(userId));
     }
 
+    // Search jobs by title (public)
+    // GET /api/jobs/search?title=...
+    @GetMapping("/search")
+    public ResponseEntity<List<JobResponse>> searchJobsByTitle(
+            @RequestParam String title) {
+        return ResponseEntity.ok(jobFacade.searchJobsByTitle(title));
+    }
+
     // Alumni or Student applies to a job
     // POST /api/jobs/{jobId}/apply/{userId}
     @PostMapping("/{jobId}/apply/{userId}")
     public ResponseEntity<JobApplicationResponse> applyForJob(
             @PathVariable Integer jobId,
-            @PathVariable Integer userId) {
-        return ResponseEntity.ok(jobFacade.applyForJob(userId, jobId));
+            @PathVariable Integer userId,
+            @RequestBody JobApplicationRequest request) {
+        return ResponseEntity.ok(jobFacade.applyForJob(userId, jobId, request));
     }
 
     // Alumni views all applications on their job

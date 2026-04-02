@@ -1,7 +1,5 @@
 package com.example.alumniconfluxbackend.dto.response;
 
-import java.time.LocalDateTime;
-
 public class JobResponse {
 
     private Integer id;
@@ -12,9 +10,18 @@ public class JobResponse {
     private String jobType;
     private String salary;
     private String applyLink;
-    private LocalDateTime createdAt;
+    private String createdAt;
     private Integer alumniId;
+    private Integer alumniUserId;
     private String alumniName;
+
+    public Integer getAlumniUserId() {
+        return alumniUserId;
+    }
+
+    public void setAlumniUserId(Integer alumniUserId) {
+        this.alumniUserId = alumniUserId;
+    }
 
     public Integer getId() {
         return id;
@@ -80,11 +87,11 @@ public class JobResponse {
         this.applyLink = applyLink;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public String getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
     }
 

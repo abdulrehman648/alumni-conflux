@@ -1,5 +1,6 @@
 package com.example.alumniconfluxbackend.facade;
 
+import com.example.alumniconfluxbackend.dto.request.JobApplicationRequest;
 import com.example.alumniconfluxbackend.dto.request.JobRequest;
 import com.example.alumniconfluxbackend.dto.response.JobApplicationResponse;
 import com.example.alumniconfluxbackend.dto.response.JobResponse;
@@ -41,8 +42,12 @@ public class JobFacade {
         return jobService.getJobsByAlumni(userId);
     }
 
-    public JobApplicationResponse applyForJob(Integer userId, Integer jobId) {
-        return jobService.applyForJob(userId, jobId);
+    public List<JobResponse> searchJobsByTitle(String title) {
+        return jobService.searchJobsByTitle(title);
+    }
+
+    public JobApplicationResponse applyForJob(Integer userId, Integer jobId, JobApplicationRequest request) {
+        return jobService.applyForJob(userId, jobId, request);
     }
 
     public List<JobApplicationResponse> getApplicationsForJob(Integer userId, Integer jobId) {
