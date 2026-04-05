@@ -9,8 +9,6 @@ import java.util.List;
 @Repository
 public interface JobApplicationRepository extends JpaRepository<JobApplication, Integer> {
     List<JobApplication> findByJobId(Integer jobId);
-
-    List<JobApplication> findByStudent_StudentId(Integer studentId);
-
-    boolean existsByJobIdAndStudent_StudentId(Integer jobId, Integer studentId);
+    List<JobApplication> findByApplicantId(Integer userId);
+    boolean existsByJobIdAndApplicantId(Integer jobId, Integer userId);
 }

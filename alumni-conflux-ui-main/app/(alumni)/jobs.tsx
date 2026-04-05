@@ -252,7 +252,7 @@ export default function AlumniJobsScreen() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
+          <ChevronLeft size={24} color="#F4EAD8" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Job Hub</Text>
@@ -264,7 +264,7 @@ export default function AlumniJobsScreen() {
           style={styles.addButton}
           onPress={() => setModalVisible(true)}
         >
-          <Plus size={24} color={colors.white} strokeWidth={2} />
+          <Plus size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -624,46 +624,49 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: Spacing.LG,
-    paddingTop: Spacing.LG,
+    padding: Spacing.LG,
+    paddingTop: 50,
     paddingBottom: Spacing.XL,
     gap: Spacing.MD,
+    backgroundColor: "#0F4C4F",
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: colors.card,
+    backgroundColor: "rgba(244, 234, 216, 0.2)",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "rgba(244, 234, 216, 0.3)",
   },
   headerContent: {
     flex: 1,
   },
   headerTitle: {
     fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.LG,
-    color: colors.textDark,
+    fontSize: 22,
+    color: "#F4EAD8",
+    fontWeight: "700",
   },
   headerSubtitle: {
     fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.SM,
-    color: colors.textLight,
+    fontSize: 13,
+    color: "rgba(244, 234, 216, 0.8)",
+    marginTop: 4,
   },
   addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#F4EAD8",
     alignItems: "center",
     justifyContent: "center",
-    elevation: 3,
+    elevation: 5,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   searchContainer: {
     flexDirection: "row",

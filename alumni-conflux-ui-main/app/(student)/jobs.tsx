@@ -1,27 +1,29 @@
 import { useRouter } from "expo-router";
 import {
-    Briefcase,
-    Building2,
-    CheckCircle,
-    ChevronLeft,
-    MapPin,
-    Search,
+  Briefcase,
+  Building2,
+  CheckCircle,
+  ChevronLeft,
+  MapPin,
+  Search,
+  X,
 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../../constants/theme";
-import colors from "../../src/theme/colors";
-import { jobsService } from "../../src/services/api";
 import { useAuth } from "../../src/context/AuthContext";
+import { jobsService } from "../../src/services/api";
+import colors from "../../src/theme/colors";
 
 export default function JobsScreen() {
   const router = useRouter();
@@ -30,6 +32,10 @@ export default function JobsScreen() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [appliedJobs, setAppliedJobs] = useState<number[]>([]);
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [resumeUrl, setResumeUrl] = useState("");
+  const [submittingApplication, setSubmittingApplication] = useState(false);
 
   useEffect(() => {
     fetchJobs();
@@ -55,10 +61,14 @@ export default function JobsScreen() {
   const filteredJobs = jobs.filter(
     (job) =>
       job.title.toLowerCase().includes(search.toLowerCase()) ||
-      job.company.toLowerCase().includes(search.toLowerCase())
+      job.company.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const handleApply = async (jobId: number, jobTitle: string) => {
+  const handleApply = async (
+    jobId: number,
+    jobTitle: string,
+    resumeUri: string,
+  ) => {
     if (!userId) {
       Toast.show({
         type: "error",
@@ -68,9 +78,22 @@ export default function JobsScreen() {
       return;
     }
 
+    if (!resumeUri.trim()) {
+      Toast.show({
+        type: "error",
+        text1: "Resume Required",
+        text2: "Please enter a valid resume URL",
+      });
+      return;
+    }
+
+    setSubmittingApplication(true);
     try {
-      await jobsService.apply(jobId, Number(userId), { resumeUrl: "https://example.com/resume.pdf" }); // Mock resume
+      await jobsService.apply(jobId, Number(userId), {
+        resumeUrl: resumeUri,
+      });
       setAppliedJobs([...appliedJobs, jobId]);
+      setResumeUrl("");
       Toast.show({
         type: "success",
         text1: "Application Submitted",
@@ -78,11 +101,37 @@ export default function JobsScreen() {
         topOffset: 50,
       });
     } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Apply Failed",
-        text2: error.response?.data?.message || "Could not submit application",
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Could not submit application";
+      console.error("Apply error:", {
+        status: error.response?.status,
+        message: errorMessage,
+        userId,
+        jobId,
       });
+
+      // More helpful error message for role-related errors
+      if (
+        errorMessage.toLowerCase().includes("only") ||
+        error.response?.status === 403
+      ) {
+        Toast.show({
+          type: "error",
+          text1: "Application Error",
+          text2:
+            "Your account is not eligible to apply. Please contact support.",
+        });
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Apply Failed",
+          text2: errorMessage,
+        });
+      }
+    } finally {
+      setSubmittingApplication(false);
     }
   };
 
@@ -90,7 +139,10 @@ export default function JobsScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
@@ -170,28 +222,19 @@ export default function JobsScreen() {
                 <View style={styles.jobFooter}>
                   <View>
                     <Text style={styles.salaryLabel}>Expected Salary</Text>
-                    <Text style={styles.salary}>{job.salary || "Not Specified"}</Text>
+                    <Text style={styles.salary}>
+                      {job.salary || "Not Specified"}
+                    </Text>
                   </View>
                   <TouchableOpacity
-                    style={[
-                      styles.applyButton,
-                      isApplied && styles.appliedButton,
-                    ]}
-                    disabled={isApplied}
-                    onPress={() => handleApply(job.id, job.title)}
+                    style={styles.viewButton}
+                    onPress={() => {
+                      setSelectedJob(job);
+                      setResumeUrl("");
+                      setDetailsModalVisible(true);
+                    }}
                   >
-                    {isApplied ? (
-                      <>
-                        <CheckCircle
-                          size={16}
-                          color={colors.success}
-                          strokeWidth={2}
-                        />
-                        <Text style={styles.appliedText}>Applied</Text>
-                      </>
-                    ) : (
-                      <Text style={styles.buttonText}>Apply Now</Text>
-                    )}
+                    <Text style={styles.viewButtonText}>View Details</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -201,12 +244,167 @@ export default function JobsScreen() {
           <View style={styles.emptyState}>
             <Briefcase size={48} color={colors.textLight} strokeWidth={1} />
             <Text style={styles.emptyStateText}>No jobs found</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Try searching with different keywords
-            </Text>
           </View>
         )}
       </ScrollView>
+
+      {/* Job Details Modal */}
+      <Modal
+        visible={detailsModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setDetailsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Job Details</Text>
+              <TouchableOpacity
+                onPress={() => setDetailsModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <X size={24} color={colors.textDark} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Content */}
+            <ScrollView
+              style={styles.modalScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {selectedJob && (
+                <View style={styles.detailsContainer}>
+                  {/* Job Title Section */}
+                  <View style={styles.titleSection}>
+                    <View style={styles.jobIconContainer}>
+                      <Briefcase
+                        size={24}
+                        color={colors.primary}
+                        strokeWidth={1.5}
+                      />
+                    </View>
+                    <View style={styles.titleContent}>
+                      <Text style={styles.detailJobTitle}>
+                        {selectedJob.title}
+                      </Text>
+                      <View style={styles.companyRow}>
+                        <Building2
+                          size={16}
+                          color={colors.textLight}
+                          strokeWidth={1.5}
+                        />
+                        <Text style={styles.detailCompany}>
+                          {selectedJob.company}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Location and Type */}
+                  <View style={styles.infoGrid}>
+                    <View style={styles.infoCard}>
+                      <MapPin
+                        size={16}
+                        color={colors.primary}
+                        strokeWidth={1.5}
+                      />
+                      <View style={styles.infoContent}>
+                        <Text style={styles.infoLabel}>Location</Text>
+                        <Text style={styles.infoValue}>
+                          {selectedJob.location}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.infoCard}>
+                      <Briefcase
+                        size={16}
+                        color={colors.primary}
+                        strokeWidth={1.5}
+                      />
+                      <View style={styles.infoContent}>
+                        <Text style={styles.infoLabel}>Job Type</Text>
+                        <Text style={styles.infoValue}>
+                          {selectedJob.jobType || selectedJob.type}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Salary Section */}
+                  <View style={styles.salarySection}>
+                    <Text style={styles.sectionLabel}>Expected Salary</Text>
+                    <Text style={styles.salaryAmount}>
+                      {selectedJob.salary || "Not Specified"}
+                    </Text>
+                  </View>
+
+                  {/* Description Section */}
+                  <View style={styles.descriptionSection}>
+                    <Text style={styles.sectionLabel}>Description</Text>
+                    <Text style={styles.descriptionText}>
+                      {selectedJob.description || "No description provided"}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Resume URL Input and Apply Button */}
+            <View style={styles.modalFooter}>
+              {appliedJobs.includes(selectedJob?.id) ? (
+                <View style={styles.appliedStatusContainer}>
+                  <CheckCircle
+                    size={20}
+                    color={colors.success}
+                    strokeWidth={2}
+                  />
+                  <Text style={styles.appliedStatusText}>
+                    You have already applied
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.resumeLabel}>Resume URL</Text>
+                    <TextInput
+                      style={styles.resumeInput}
+                      placeholder="https://example.com/your-resume.pdf"
+                      placeholderTextColor={colors.textLight}
+                      value={resumeUrl}
+                      onChangeText={setResumeUrl}
+                      editable={!submittingApplication}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.applyButton,
+                      submittingApplication && { opacity: 0.6 },
+                    ]}
+                    disabled={submittingApplication}
+                    onPress={() => {
+                      if (selectedJob) {
+                        handleApply(
+                          selectedJob.id,
+                          selectedJob.title,
+                          resumeUrl,
+                        );
+                        setDetailsModalVisible(false);
+                      }
+                    }}
+                  >
+                    {submittingApplication ? (
+                      <ActivityIndicator size="small" color={colors.white} />
+                    ) : (
+                      <Text style={styles.buttonText}>Submit Application</Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -447,5 +645,219 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.SM,
     fontWeight: "400",
     color: colors.textLight,
+  },
+
+  viewButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: Spacing.MD,
+    paddingVertical: Spacing.SM,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  viewButtonText: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: FontSizes.SM,
+    fontWeight: "600",
+    color: colors.white,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+
+  modalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "90%",
+    flexDirection: "column",
+  },
+
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.LG,
+    paddingVertical: Spacing.LG,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+
+  modalTitle: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: FontSizes.LG,
+    fontWeight: "600",
+    color: colors.textDark,
+  },
+
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.card,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  modalScrollContent: {
+    flex: 1,
+    paddingHorizontal: Spacing.LG,
+  },
+
+  detailsContainer: {
+    paddingVertical: Spacing.LG,
+    gap: Spacing.LG,
+  },
+
+  titleSection: {
+    flexDirection: "row",
+    gap: Spacing.MD,
+    alignItems: "flex-start",
+  },
+
+  titleContent: {
+    flex: 1,
+    gap: Spacing.XS,
+  },
+
+  detailJobTitle: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: FontSizes.LG,
+    fontWeight: "600",
+    color: colors.textDark,
+  },
+
+  detailCompany: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.Base,
+    fontWeight: "400",
+    color: colors.textLight,
+  },
+
+  infoGrid: {
+    gap: Spacing.MD,
+  },
+
+  infoCard: {
+    flexDirection: "row",
+    gap: Spacing.MD,
+    backgroundColor: colors.card,
+    padding: Spacing.MD,
+    borderRadius: 12,
+    alignItems: "flex-start",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  infoContent: {
+    flex: 1,
+    gap: Spacing.XS,
+  },
+
+  infoLabel: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.XS,
+    fontWeight: "400",
+    color: colors.textLight,
+  },
+
+  infoValue: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: FontSizes.Base,
+    fontWeight: "600",
+    color: colors.textDark,
+  },
+
+  salarySection: {
+    backgroundColor: colors.card,
+    padding: Spacing.MD,
+    borderRadius: 12,
+    gap: Spacing.XS,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  sectionLabel: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.XS,
+    fontWeight: "400",
+    color: colors.textLight,
+  },
+
+  salaryAmount: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: FontSizes.LG,
+    fontWeight: "600",
+    color: colors.primary,
+  },
+
+  descriptionSection: {
+    gap: Spacing.MD,
+    marginBottom: Spacing.LG,
+  },
+
+  descriptionText: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.Base,
+    fontWeight: "400",
+    color: colors.textDark,
+    lineHeight: 22,
+  },
+
+  modalFooter: {
+    paddingHorizontal: Spacing.LG,
+    paddingVertical: Spacing.LG,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: Spacing.MD,
+  },
+
+  formGroup: {
+    gap: Spacing.XS,
+  },
+
+  resumeLabel: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: FontSizes.SM,
+    fontWeight: "600",
+    color: colors.textDark,
+  },
+
+  resumeInput: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: Spacing.MD,
+    paddingVertical: Spacing.SM,
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.Base,
+    color: colors.textDark,
+  },
+
+  appliedStatusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.MD,
+    paddingVertical: Spacing.MD,
+    paddingHorizontal: Spacing.LG,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.success,
+  },
+
+  appliedStatusText: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: FontSizes.Base,
+    fontWeight: "600",
+    color: colors.success,
   },
 });

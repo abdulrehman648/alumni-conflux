@@ -53,4 +53,19 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
+
+    @Override
+    public void updateProfilePicture(Integer userId, String imageUrl) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (user.getStudent() != null) {
+            user.getStudent().setProfilePicture(imageUrl);
+        } else if (user.getAlumni() != null) {
+            user.getAlumni().setProfilePicture(imageUrl);
+        } else {
+            throw new IllegalArgumentException("Associated profile not found for user");
+        }
+        userRepository.save(user);
+    }
 }

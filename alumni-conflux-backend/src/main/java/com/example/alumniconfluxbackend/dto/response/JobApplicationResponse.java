@@ -7,7 +7,9 @@ public class JobApplicationResponse {
     private String jobTitle;
     private String company;
     private Integer applicantId;
+    private Integer applicantUserId;
     private String applicantName;
+    private String applicantRole;
     private String status;
     private String appliedAt;
     private String resumeUrl;
@@ -58,6 +60,22 @@ public class JobApplicationResponse {
 
     public void setApplicantName(String applicantName) {
         this.applicantName = applicantName;
+    }
+
+    public String getApplicantRole() {
+        return applicantRole;
+    }
+
+    public void setApplicantRole(String applicantRole) {
+        this.applicantRole = applicantRole;
+    }
+
+    public Integer getApplicantUserId() {
+        return applicantUserId;
+    }
+
+    public void setApplicantUserId(Integer applicantUserId) {
+        this.applicantUserId = applicantUserId;
     }
 
     public String getStatus() {

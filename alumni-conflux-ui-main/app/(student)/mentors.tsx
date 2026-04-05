@@ -1,27 +1,25 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-} from "react-native";
 import { useRouter } from "expo-router";
-import { useState } from "react";
 import {
   ChevronLeft,
-  Star,
-  Code,
-  Search,
-  MessageSquare,
   ChevronRight,
+  Code,
+  MessageSquare,
+  Search,
+  Star,
 } from "lucide-react-native";
-import colors from "../../src/theme/colors";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { FontSizes, Spacing } from "../../constants/theme";
 import { useList } from "../../src/hooks/useAsync";
-import { mentorsService } from "../../src/services/api";
-import Toast from "react-native-toast-message";
+import { mentorshipService } from "../../src/services/api";
+import colors from "../../src/theme/colors";
 
 export default function MentorsScreen() {
   const router = useRouter();
@@ -34,13 +32,7 @@ export default function MentorsScreen() {
     loading,
     error,
     refetch,
-  } = useList(
-    () =>
-      mentorsService
-        .getAll()
-        .then((res) => res.data || []),
-    "name"
-  );
+  } = useList(() => mentorshipService.getAvailableMentors(), "name");
 
   const renderRating = (rating: number) => {
     return (
@@ -56,10 +48,7 @@ export default function MentorsScreen() {
       <View style={styles.errorContainer}>
         <MessageSquare size={48} color={colors.danger} strokeWidth={1} />
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={refetch}
-        >
+        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
           <Text style={styles.retryText}>Retry</Text>
         </TouchableOpacity>
       </View>
@@ -70,7 +59,10 @@ export default function MentorsScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
@@ -117,19 +109,19 @@ export default function MentorsScreen() {
             >
               {/* Avatar */}
               <View style={styles.avatarContainer}>
-                <Text style={styles.avatarLetter}>
-                  {mentor.name.charAt(0)}
-                </Text>
+                <Text style={styles.avatarLetter}>{mentor.name.charAt(0)}</Text>
               </View>
 
               {/* Mentor Info */}
               <View style={styles.mentorInfo}>
                 <View>
                   <Text style={styles.mentorName}>{mentor.name}</Text>
-                  <Text style={styles.mentorRole}>{mentor.role}</Text>
+                  <Text style={styles.mentorRole}>{mentor.industry}</Text>
                   <View style={styles.skillsRow}>
                     <Code size={14} color={colors.primary} strokeWidth={1.5} />
-                    <Text style={styles.skillsText}>{mentor.skills}</Text>
+                    <Text style={styles.skillsText}>
+                      {mentor.currentCompany}
+                    </Text>
                   </View>
                 </View>
 
@@ -155,9 +147,6 @@ export default function MentorsScreen() {
         <View style={styles.emptyState}>
           <MessageSquare size={48} color={colors.textLight} strokeWidth={1} />
           <Text style={styles.emptyStateText}>No mentors found</Text>
-          <Text style={styles.emptyStateSubtext}>
-            Try searching with different keywords
-          </Text>
         </View>
       )}
     </View>

@@ -59,27 +59,39 @@ export default function RoleScreen() {
 
       <View style={styles.buttonsContainer}>
         {roleOptions.map((role) => (
-          <TouchableOpacity
-            key={role.id}
-            style={styles.roleButton}
-            onPress={role.onPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.roleContent}>
-              <View style={styles.iconContainer}>
-                <Ionicons
-                  name={role.icon as any}
-                  size={32}
-                  color={colors.primary}
-                />
+          <View key={role.id}>
+            <TouchableOpacity
+              style={styles.roleButton}
+              onPress={role.onPress}
+              activeOpacity={0.7}
+            >
+              <View style={styles.roleContent}>
+                <View style={styles.iconContainer}>
+                  <Ionicons
+                    name={role.icon as any}
+                    size={32}
+                    color={colors.primary}
+                  />
+                </View>
+                <View style={styles.roleInfo}>
+                  <Text style={styles.roleName}>{role.title}</Text>
+                  <Text style={styles.roleDescription}>{role.description}</Text>
+                </View>
               </View>
-              <View style={styles.roleInfo}>
-                <Text style={styles.roleName}>{role.title}</Text>
-                <Text style={styles.roleDescription}>{role.description}</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color={colors.primary} />
-          </TouchableOpacity>
+              <Ionicons
+                name="chevron-forward"
+                size={24}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
+
+            {role.role !== "ADMIN" && (
+              <TouchableOpacity
+                onPress={() => handleSignUp(role.role)}
+                style={styles.signUpLinkContainer}
+              ></TouchableOpacity>
+            )}
+          </View>
         ))}
       </View>
     </ScrollView>
@@ -165,5 +177,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: colors.primary,
+  },
+  signUpLinkContainer: {
+    marginTop: -Spacing.SM,
+    marginBottom: Spacing.LG,
+    paddingHorizontal: Spacing.SM,
+    alignItems: "center",
+  },
+  signUpLinkText: {
+    fontFamily: "Poppins-Regular",
+    fontSize: 12,
+    color: colors.textLight,
+  },
+  signUpLinkHighlight: {
+    color: colors.primary,
+    fontFamily: "Poppins-SemiBold",
+    textDecorationLine: "underline",
   },
 });

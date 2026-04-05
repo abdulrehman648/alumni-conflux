@@ -10,10 +10,12 @@ import com.example.alumniconfluxbackend.service.AdminService;
 import com.example.alumniconfluxbackend.util.Role;
 import com.example.alumniconfluxbackend.dto.response.UserResponse;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class AdminServiceImpl implements AdminService {
 
     private final AdminRepository adminRepository;

@@ -26,7 +26,7 @@ public class SignupFacade {
         if (userService.emailExists(email)) {
             throw new IllegalArgumentException("Email already exists");
         }
-        otpService.generateOtp(email);
+        otpService.generateOtp(email, "SIGNUP");
     }
 
     public void checkUsername(String username) {

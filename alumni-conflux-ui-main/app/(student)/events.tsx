@@ -2,12 +2,12 @@ import { useRouter } from "expo-router";
 import { Calendar, ChevronLeft, Clock, MapPin, Users } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../../constants/theme";
@@ -70,8 +70,11 @@ export default function EventsScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <ChevronLeft size={24} color="#F4EAD8" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Upcoming Events</Text>
@@ -88,9 +91,9 @@ export default function EventsScreen() {
         contentContainerStyle={styles.listContent}
       >
         {loading ? (
-           <View style={styles.emptyState}>
-             <ActivityIndicator size="large" color={colors.primary} />
-           </View>
+          <View style={styles.emptyState}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
         ) : events.length > 0 ? (
           events.map((event) => {
             const isRegistered = registeredEvents.includes(event.id);
@@ -154,7 +157,7 @@ export default function EventsScreen() {
                 </View>
 
                 {/* Register Button */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.registerButton, isRegistered && styles.registeredButton]}
                   onPress={() => handleRegister(event.id, event.title)}
                   disabled={isRegistered}
@@ -185,22 +188,23 @@ const styles = StyleSheet.create({
 
   headerContainer: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    paddingHorizontal: Spacing.LG,
-    paddingTop: Spacing.LG,
+    alignItems: "center",
+    padding: Spacing.LG,
+    paddingTop: 50,
     paddingBottom: Spacing.XL,
     gap: Spacing.MD,
+    backgroundColor: "#0F4C4F",
   },
 
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: colors.card,
+    backgroundColor: "rgba(244, 234, 216, 0.2)",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "rgba(244, 234, 216, 0.3)",
   },
 
   headerContent: {
@@ -209,17 +213,15 @@ const styles = StyleSheet.create({
 
   headerTitle: {
     fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.LG,
-    fontWeight: "600",
-    color: colors.textDark,
+    fontSize: 22,
+    color: "#F4EAD8",
+    fontWeight: "700",
   },
-
   headerSubtitle: {
     fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.SM,
-    fontWeight: "400",
-    color: colors.textLight,
-    marginTop: Spacing.XS,
+    fontSize: 13,
+    color: "rgba(244, 234, 216, 0.8)",
+    marginTop: 4,
   },
 
   listContainer: {

@@ -9,9 +9,7 @@ import java.util.List;
 @Repository
 public interface EventRegistrationRepository extends JpaRepository<EventRegistration, Integer> {
     List<EventRegistration> findByEventId(Integer eventId);
-    List<EventRegistration> findByStudent_StudentId(Integer studentId);
-    List<EventRegistration> findByAlumniId(Integer alumniId);
-    boolean existsByEventIdAndStudent_StudentId(Integer eventId, Integer studentId);
-    boolean existsByEventIdAndAlumniId(Integer eventId, Integer alumniId);
+    List<EventRegistration> findByUserId(Integer userId);
+    boolean existsByEventIdAndUserId(Integer eventId, Integer userId);
     long countByEventId(Integer eventId);
 }

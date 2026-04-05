@@ -16,12 +16,8 @@ public class EventRegistration {
     private Event event;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id")
-    private Student student;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "alumni_id")
-    private Alumni alumni;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     private LocalDateTime registrationDate = LocalDateTime.now();
 
@@ -41,20 +37,12 @@ public class EventRegistration {
         this.event = event;
     }
 
-    public Student getStudent() {
-        return student;
+    public User getUser() {
+        return user;
     }
 
-    public void setStudent(Student student) {
-        this.student = student;
-    }
-
-    public Alumni getAlumni() {
-        return alumni;
-    }
-
-    public void setAlumni(Alumni alumni) {
-        this.alumni = alumni;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public LocalDateTime getRegistrationDate() {

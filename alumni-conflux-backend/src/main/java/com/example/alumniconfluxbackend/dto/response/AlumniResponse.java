@@ -16,6 +16,7 @@ public class AlumniResponse {
     private String experienceLevel;
     private List<String> skills;
     private List<String> achievements;
+    private String profilePicture;
 
     public Integer getId() {
         return id;
@@ -111,5 +112,13 @@ public class AlumniResponse {
 
     public void setAchievements(List<String> achievements) {
         this.achievements = achievements;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
     }
 }

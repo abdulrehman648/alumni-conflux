@@ -1,13 +1,13 @@
 import axios from "axios";
 import { Platform } from "react-native";
+import { AccountDetails, Campaign, Contribution } from "../types/models";
 
-// API Service Layer - Easy to swap with real backend
-// On mobile: use your computer's local IP address (find with ipconfig on Windows)
-// On web: use localhost
+export { AccountDetails, Campaign, Contribution };
+
 const API_BASE_URL =
   Platform.OS === "web"
     ? "http://localhost:8080/api"
-    : "http://192.168.0.110:8080/api";
+    : "http://192.168.0.101:8080/api";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -20,6 +20,7 @@ export interface UserResponse {
   username: string;
   email: string;
   role: string;
+  profilePicture?: string;
   profileComplete?: boolean;
 }
 
@@ -217,9 +218,36 @@ export const eventsService = {
     const response = await apiClient.get(`/events/registered/${userId}`);
     return response.data;
   },
+
+  // GET PENDING REQUESTS (Admin)
+  getPending: async () => {
+    const response = await apiClient.get("/events/pending");
+    return response.data;
+  },
+
+  // UPDATE STATUS (Admin)
+  updateStatus: async (eventId: number, status: string) => {
+    const response = await apiClient.patch(`/events/${eventId}/status`, null, {
+      params: { status },
+    });
+    return response.data;
+  },
+
+  // UPDATE EVENT DETAILS (Admin)
+  updateEvent: async (eventId: number, userId: number, data: any) => {
+    const response = await apiClient.put(
+      `/events/${eventId}/update/${userId}`,
+      data,
+    );
+    return response.data;
+  },
+
+  getEventsCreatedByUser: async (userId: number) => {
+    const response = await apiClient.get(`/events/creator/${userId}`);
+    return response.data;
+  },
 };
 
-// Users/Profile Service
 export const profileService = {
   getStudentProfile: async (userId: number) => {
     const response = await apiClient.get(`/student/${userId}`);
@@ -250,11 +278,20 @@ export const profileService = {
     const response = await apiClient.post(`/alumni/${userId}`, data);
     return response.data;
   },
+
+  uploadProfilePicture: async (userId: number, photo: any) => {
+    const formData = new FormData();
+    formData.append("file", photo);
+
+    const response = await apiClient.post(
+      `/user/${userId}/profile-picture`,
+      formData,
+    );
+    return response.data;
+  },
 };
 
-// Admin Service
 export const adminService = {
-  // Get all users
   getAllUsers: async (): Promise<any[]> => {
     const response = await apiClient.get("/admin/users");
     if (Array.isArray(response.data)) {
@@ -278,6 +315,140 @@ export const adminService = {
   // Update user
   updateUser: async (userId: number, data: any) => {
     const response = await apiClient.put(`/admin/users/${userId}`, data);
+    return response.data;
+  },
+};
+
+// Mentorship Service
+export const mentorshipService = {
+  getAvailableMentors: async (): Promise<any[]> => {
+    const response = await apiClient.get("/mentorship/mentors");
+    return response.data;
+  },
+
+  updateAvailability: async (userId: number, isAvailable: boolean) => {
+    const response = await apiClient.put(
+      `/mentorship/availability/${userId}`,
+      null,
+      {
+        params: { isAvailable },
+      },
+    );
+    return response.data;
+  },
+
+  requestMentorship: async (
+    userId: number,
+    alumniId: number,
+    message: string = "",
+  ) => {
+    const response = await apiClient.post(
+      `/mentorship/request/${userId}/${alumniId}`,
+      null,
+      {
+        params: { message },
+      },
+    );
+    return response.data;
+  },
+
+  getReceivedRequests: async (userId: number): Promise<any[]> => {
+    const response = await apiClient.get(
+      `/mentorship/requests/received/${userId}`,
+    );
+    return response.data;
+  },
+
+  getSentRequests: async (userId: number): Promise<any[]> => {
+    const response = await apiClient.get(`/mentorship/requests/sent/${userId}`);
+    return response.data;
+  },
+
+  updateRequestStatus: async (
+    requestId: number,
+    userId: number,
+    status: string,
+  ) => {
+    const response = await apiClient.put(
+      `/mentorship/requests/${requestId}/status/${userId}`,
+      null,
+      {
+        params: { status },
+      },
+    );
+    return response.data;
+  },
+};
+
+// Donations & Funds Service
+export const donationsService = {
+  // Admin: Create Campaign
+  createCampaign: async (data: any) => {
+    const response = await apiClient.post("/admin/campaigns", data);
+    return response.data;
+  },
+
+  // Admin: View all campaigns (Admin view might show more info if needed, but using shared for now)
+  getAllCampaignsAdmin: async (): Promise<Campaign[]> => {
+    const response = await apiClient.get("/admin/campaigns");
+    return response.data;
+  },
+
+  // Admin: View contributions for a campaign
+  getContributions: async (campaignId: number): Promise<Contribution[]> => {
+    const response = await apiClient.get(
+      `/admin/campaigns/${campaignId}/contributions`,
+    );
+    return response.data;
+  },
+
+  verifyContribution: async (
+    contributionId: number,
+    status: string,
+  ): Promise<Contribution> => {
+    const response = await apiClient.put(
+      `/admin/campaigns/contributions/${contributionId}/verify`,
+      null,
+      {
+        params: { status },
+      },
+    );
+    return response.data;
+  },
+
+  getActiveCampaigns: async (): Promise<Campaign[]> => {
+    const response = await apiClient.get("/alumni/campaigns");
+    return response.data;
+  },
+
+  getCampaignById: async (id: number): Promise<Campaign> => {
+    const response = await apiClient.get(`/alumni/campaigns/${id}`);
+    return response.data;
+  },
+
+  submitContribution: async (
+    campaignId: number,
+    requestData: any,
+    screenshot: any,
+  ) => {
+    const formData = new FormData();
+    formData.append("amount", requestData.amount.toString());
+    formData.append("alumniId", requestData.alumniId.toString());
+    formData.append("transactionId", requestData.transactionId || "");
+    formData.append("note", requestData.note || "");
+    formData.append("screenshot", screenshot);
+
+    const response = await apiClient.post(
+      `/alumni/campaigns/${campaignId}/contribute`,
+      formData,
+    );
+    return response.data;
+  },
+
+  getMyContributions: async (alumniId: number): Promise<Contribution[]> => {
+    const response = await apiClient.get(
+      `/alumni/campaigns/my-contributions/${alumniId}`,
+    );
     return response.data;
   },
 };

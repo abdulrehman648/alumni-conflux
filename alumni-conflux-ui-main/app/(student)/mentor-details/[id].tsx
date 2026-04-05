@@ -7,93 +7,65 @@ import {
   TextInput,
   ScrollView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  ActivityIndicator
 } from "react-native";
 
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import { useBooking } from "../../../src/context/BookingContext";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { useEffect, useState } from "react";
+import { mentorshipService } from "../../../src/services/api";
+import { useAuth } from "../../../src/context/AuthContext";
+import colors from "../../../src/theme/colors";
+import { Spacing, FontSizes } from "../../../constants/theme";
+import Toast from "react-native-toast-message";
 
 export default function MentorDetails() {
 
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { addBooking } = useBooking();
+  const { userId } = useAuth();
+  const [mentor, setMentor] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const mentors = [
-    {
-      id: "1",
-      name: "Ali Khan",
-      role: "Senior Software Engineer – Google",
-      skills: "React, Node, AI, Cloud",
-      image: require("../../../assets/images/images/mentor2.png"),
-    },
-    {
-      id: "2",
-      name: "Usman Ali",
-      role: "Frontend Developer – Meta",
-      skills: "React Native, UI/UX",
-      image: require("../../../assets/images/images/mentor2.png"),
-    },
-    {
-      id: "3",
-      name: "Ahmed Raza",
-      role: "Backend Engineer – Amazon",
-      skills: "Node, Express, MongoDB",
-      image: require("../../../assets/images/images/mentor2.png"),
-    },
-  ];
+  useEffect(() => {
+     fetchMentorDetails();
+  }, [id]);
 
-  const mentor = mentors.find((m) => m.id === id);
-
-  const [rating, setRating] = useState(0);
-  const [review, setReview] = useState("");
-
-  // reviews per mentor
-  const [reviews, setReviews] = useState<{ [key: string]: any[] }>({});
-
-  const [selectedTime, setSelectedTime] = useState("");
-  const [date, setDate] = useState(new Date());
-  const [showCalendar, setShowCalendar] = useState(false);
-
-  const timeSlots = ["10:00 AM", "12:00 PM", "3:00 PM", "6:00 PM"];
-
-  // submit review
-  const submitReview = () => {
-    if (review === "") {
-      alert("Write review first");
-      return;
+  const fetchMentorDetails = async () => {
+    try {
+      setLoading(true);
+      const mentors = await mentorshipService.getAvailableMentors();
+      const found = mentors.find(m => m.alumniId === Number(id));
+      setMentor(found);
+    } catch (error) {
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to fetch mentor details' });
+    } finally {
+      setLoading(false);
     }
-
-    setReviews((prev) => ({
-      ...prev,
-      [id as string]: [
-        ...(prev[id as string] || []),
-        { rating, text: review }
-      ]
-    }));
-
-    setReview("");
-    setRating(0);
   };
 
-  const handleBooking = () => {
-    if (!selectedTime) {
-      alert("Select time slot");
-      return;
+  const handleRequestMentorship = async () => {
+    if (!userId) return;
+    setSubmitting(true);
+    try {
+      await mentorshipService.requestMentorship(Number(userId), Number(id), message);
+      Toast.show({ type: 'success', text1: 'Request Sent', text2: 'Mentor will be notified' });
+      router.back();
+    } catch (error: any) {
+      Toast.show({ 
+        type: 'error', 
+        text1: 'Request Failed', 
+        text2: error.response?.data?.message || 'Could not send request' 
+      });
+    } finally {
+      setSubmitting(false);
     }
-
-    addBooking({
-      mentorId: id as string,
-      mentorName: mentor?.name || "Unknown",
-      date: date.toDateString(),
-      time: selectedTime
-    });
-
-    alert("Session Booked");
-    router.push("/(student)/bookings");
   };
+
+  if (loading) return <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
+  if (!mentor) return <View style={styles.center}><Text>Mentor not found</Text></View>;
 
   return (
 
@@ -109,110 +81,37 @@ export default function MentorDetails() {
         keyboardShouldPersistTaps="handled"
       >
 
-        <Image source={mentor?.image} style={styles.image} />
-
-        <Text style={styles.name}>{mentor?.name}</Text>
-
-        <Text style={styles.role}>{mentor?.role}</Text>
-
-        <Text style={styles.skills}>
-          Skills: {mentor?.skills}
-        </Text>
-
-        <Text style={styles.heading}>Select Date</Text>
-
-        <TouchableOpacity
-          style={styles.dateButton}
-          onPress={() => setShowCalendar(true)}
-        >
-          <Text style={styles.dateText}>
-            {date.toDateString()}
-          </Text>
-        </TouchableOpacity>
-
-        {showCalendar && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            display="default"
-            onChange={(event, selectedDate) => {
-              setShowCalendar(false);
-              if (selectedDate) setDate(selectedDate);
-            }}
-          />
-        )}
-
-        <Text style={styles.heading}>Select Time Slot</Text>
-
-        {timeSlots.map((time) => (
-          <TouchableOpacity
-            key={time}
-            style={[
-              styles.slot,
-              selectedTime === time && styles.selected
-            ]}
-            onPress={() => setSelectedTime(time)}
-          >
-            <Text style={styles.slotText}>{time}</Text>
-          </TouchableOpacity>
-        ))}
-
-        <TouchableOpacity
-          style={[
-            styles.bookButton,
-            !selectedTime && { opacity: 0.5 }
-          ]}
-          disabled={!selectedTime}
-          onPress={handleBooking}
-        >
-          <Text style={styles.buttonText}>Book Session</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.heading}>Rate Mentor</Text>
-
-        <View style={styles.ratingRow}>
-          {[1, 2, 3, 4, 5].map((star) => (
-            <TouchableOpacity key={star} onPress={() => setRating(star)}>
-              <Text style={styles.star}>
-                {rating >= star ? "⭐" : "☆"}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.avatarContainer}>
+           <Text style={styles.avatarLetter}>{mentor.name.charAt(0)}</Text>
         </View>
 
-        <Text style={styles.heading}>Write Review</Text>
+        <Text style={styles.name}>{mentor.name}</Text>
+        <Text style={styles.role}>{mentor.industry}</Text>
+        <Text style={styles.skills}>{mentor.currentCompany}</Text>
 
-        <TextInput
-          placeholder="Write your review"
-          style={styles.input}
-          value={review}
-          onChangeText={setReview}
-          multiline
-        />
-
-        <TouchableOpacity
-          style={styles.reviewButton}
-          onPress={submitReview}
-        >
-          <Text style={styles.buttonText}>Submit Review</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.heading}>Student Reviews</Text>
-
-        {!(reviews[id as string]?.length) ? (
-          <Text style={{ textAlign: "center", marginTop: 10 }}>
-            No reviews yet
-          </Text>
-        ) : (
-          reviews[id as string].map((item, index) => (
-            <View key={index} style={styles.reviewCard}>
-              <Text style={styles.reviewRating}>
-                ⭐ {item.rating}
-              </Text>
-              <Text>{item.text}</Text>
-            </View>
-          ))
-        )}
+        <View style={styles.requestSection}>
+          <Text style={styles.heading}>Why do you want mentorship?</Text>
+          <TextInput
+            placeholder="Introduce yourself and explain your goals..."
+            style={styles.input}
+            value={message}
+            onChangeText={setMessage}
+            multiline
+            numberOfLines={4}
+          />
+          
+          <TouchableOpacity
+            style={[styles.bookButton, submitting && { opacity: 0.7 }]}
+            disabled={submitting}
+            onPress={handleRequestMentorship}
+          >
+            {submitting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Send Mentorship Request</Text>
+            )}
+          </TouchableOpacity>
+        </View>
 
       </ScrollView>
 
@@ -224,16 +123,38 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: "#F4EAD8",
+    backgroundColor: colors.background,
     padding: 20
   },
 
-  image: {
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background
+  },
+
+  avatarContainer: {
     width: 120,
     height: 120,
     borderRadius: 60,
+    backgroundColor: colors.primary,
     alignSelf: "center",
-    marginBottom: 15
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+
+  avatarLetter: {
+    color: colors.white,
+    fontSize: 48,
+    fontFamily: 'Poppins-Bold',
+    fontWeight: 'bold'
   },
 
   name: {
@@ -249,92 +170,48 @@ const styles = StyleSheet.create({
 
   skills: {
     textAlign: "center",
-    color: "#0F4C4F",
+    color: colors.primary,
     marginBottom: 20
   },
 
-  heading: {
-    fontSize: 18,
+  requestSection: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
     marginTop: 20,
-    marginBottom: 15
-  },
-
-  dateButton: {
-    backgroundColor: "#0F4C4F",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center"
-  },
-
-  dateText: {
-    color: "white"
-  },
-
-  slot: {
-    backgroundColor: "#0F4C4F",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10
-  },
-
-  selected: {
-    backgroundColor: "#2E8B8B"
-  },
-
-  slotText: {
-    color: "white"
-  },
-
-  bookButton: {
-    backgroundColor: "#0F4C4F",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10
-  },
-
-  ratingRow: {
-    flexDirection: "row",
-    marginTop: 10
-  },
-
-  star: {
-    fontSize: 30,
-    marginRight: 5
-  },
-
-  input: {
-    backgroundColor: "white",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 10,
-    minHeight: 60
-  },
-
-  reviewButton: {
-    backgroundColor: "#0F4C4F",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 10
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 
   buttonText: {
     color: "white",
-    fontWeight: "bold"
+    fontWeight: "bold",
+    fontFamily: 'Poppins-SemiBold'
   },
 
-  reviewCard: {
-    backgroundColor: "white",
-    padding: 10,
+  bookButton: {
+    backgroundColor: colors.primary,
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 20
+  },
+
+  input: {
+    backgroundColor: colors.background,
+    padding: 12,
     borderRadius: 8,
     marginTop: 10,
-    marginBottom: 10
+    borderWidth: 1,
+    borderColor: colors.border,
+    minHeight: 100,
+    textAlignVertical: 'top'
   },
 
-  reviewRating: {
-    color: "#FFD700",
+  heading: {
+    fontSize: 16,
+    fontFamily: 'Poppins-SemiBold',
+    color: colors.textDark,
     marginBottom: 5
-  }
-
+  },
 });

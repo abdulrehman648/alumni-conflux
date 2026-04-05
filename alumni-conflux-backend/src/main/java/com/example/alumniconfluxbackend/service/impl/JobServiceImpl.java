@@ -13,12 +13,14 @@ import com.example.alumniconfluxbackend.repository.UserRepository;
 import com.example.alumniconfluxbackend.service.JobService;
 import com.example.alumniconfluxbackend.util.Role;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class JobServiceImpl implements JobService {
 
     private static final DateTimeFormatter DATE_FORMATTER =
@@ -123,17 +125,17 @@ public class JobServiceImpl implements JobService {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new RuntimeException("Job not found"));
 
-        if (user.getStudent() == null) {
-            throw new RuntimeException("Only students can apply for jobs");
+        if (job.getAlumni().getUser().getId().equals(userId)) {
+            throw new RuntimeException("You cannot apply to your own job");
         }
 
-        if (jobApplicationRepository.existsByJobIdAndStudent_StudentId(jobId, user.getStudent().getStudentId())) {
+        if (jobApplicationRepository.existsByJobIdAndApplicantId(jobId, userId)) {
             throw new RuntimeException("You have already applied for this job");
         }
 
         JobApplication application = new JobApplication();
         application.setJob(job);
-        application.setStudent(user.getStudent());
+        application.setApplicant(user);
         application.setResumeUrl(request.getResumeUrl());
 
         jobApplicationRepository.save(application);
@@ -157,18 +159,11 @@ public class JobServiceImpl implements JobService {
 
     @Override
     public List<JobApplicationResponse> getMyApplications(Integer userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        if (user.getStudent() == null) {
-            return List.of();
-        }
-        return jobApplicationRepository.findByStudent_StudentId(user.getStudent().getStudentId())
+        return jobApplicationRepository.findByApplicantId(userId)
                 .stream()
                 .map(this::mapToApplicationResponse)
                 .collect(Collectors.toList());
     }
-
-    // ── helpers ──────────────────────────────────────────────────────────────
 
     private void mapRequestToJob(JobRequest request, Job job) {
         job.setTitle(request.getTitle());
@@ -204,8 +199,19 @@ public class JobServiceImpl implements JobService {
         res.setJobId(app.getJob().getId());
         res.setJobTitle(app.getJob().getTitle());
         res.setCompany(app.getJob().getCompany());
-        res.setApplicantId(app.getStudent().getStudentId());
-        res.setApplicantName(app.getStudent().getUser().getFullName());
+        
+        User applicant = app.getApplicant();
+        res.setApplicantUserId(applicant.getId());
+        res.setApplicantName(applicant.getFullName());
+        res.setApplicantRole(applicant.getRole().toString());
+        
+        // Link to profile ID if available
+        if (applicant.getStudent() != null) {
+            res.setApplicantId(applicant.getStudent().getId());
+        } else if (applicant.getAlumni() != null) {
+            res.setApplicantId(applicant.getAlumni().getId());
+        }
+
         res.setStatus(app.getStatus());
         res.setResumeUrl(app.getResumeUrl());
         res.setAppliedAt(app.getAppliedAt() != null

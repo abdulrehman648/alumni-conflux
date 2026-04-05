@@ -4,6 +4,7 @@ import {
   Calendar,
   ChevronRight,
   FileText,
+  Heart,
   Settings,
   Shield,
   Users,
@@ -67,6 +68,12 @@ export default function AdminHome() {
       route: "/(admin)/events",
     },
     {
+      title: "Donations",
+      description: "View and manage donation campaigns",
+      icon: Heart,
+      route: "/(admin)/donations",
+    },
+    {
       title: "View Analytics",
       description: "Track system analytics and insights",
       icon: BarChart3,
@@ -88,13 +95,6 @@ export default function AdminHome() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.welcomeSection}>
-        <View style={styles.welcomeContent}>
-          <Text style={styles.welcomeText}>Admin Dashboard</Text>
-          <Text style={styles.name}>{fullName || "Admin"}</Text>
-        </View>
-      </View>
-
       <View style={styles.statsGrid}>
         {stats.map((stat, index) => {
           const Icon = stat.icon;

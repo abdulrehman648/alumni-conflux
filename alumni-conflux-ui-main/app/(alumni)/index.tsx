@@ -5,6 +5,7 @@ import {
   Calendar,
   ChevronRight,
   Clock,
+  Heart,
   Settings,
   User,
   Users,
@@ -78,6 +79,12 @@ export default function AlumniHome() {
       description: "Edit your alumni profile",
       icon: Settings,
       route: "/(alumni)/profile",
+    },
+    {
+      title: "Donations",
+      description: "Contribute to campus fundings",
+      icon: Heart,
+      route: "/(alumni)/donations",
     },
   ] as const;
 

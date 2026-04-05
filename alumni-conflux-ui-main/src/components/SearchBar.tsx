@@ -10,24 +10,21 @@ import { Search, X } from "lucide-react-native";
 import colors from "../theme/colors";
 import { FontSizes, Spacing } from "../../constants/theme";
 
-interface SearchBarProps extends TextInputProps {
-  value: string;
-  onChangeText: (text: string) => void;
+interface SearchBarProps extends Omit<TextInputProps, "style"> {
   onClear?: () => void;
-  placeholder?: string;
-  style?: ViewStyle;
+  containerStyle?: ViewStyle;
 }
 
 export default function SearchBar({
-  value,
+  value = "",
   onChangeText,
   onClear,
   placeholder = "Search...",
-  style,
+  containerStyle,
   ...props
 }: SearchBarProps) {
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, containerStyle]}>
       <Search size={20} color={colors.textLight} strokeWidth={1.5} />
       <TextInput
         style={styles.input}
@@ -37,7 +34,7 @@ export default function SearchBar({
         onChangeText={onChangeText}
         {...props}
       />
-      {value.length > 0 && onClear && (
+      {value && value.length > 0 && onClear && (
         <X
           size={20}
           color={colors.textLight}

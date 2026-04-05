@@ -29,12 +29,20 @@ public class EventController {
         return ResponseEntity.ok(eventFacade.createEventRequest(userId, request));
     }
 
-    // Admin approves or rejects event request
     @PatchMapping("/{eventId}/status")
     public ResponseEntity<EventResponse> updateEventStatus(
             @PathVariable Integer eventId,
             @RequestParam EventStatus status) {
         return ResponseEntity.ok(eventFacade.updateEventStatus(eventId, status));
+    }
+
+    // Admin updates event details
+    @PutMapping("/{eventId}/update/{userId}")
+    public ResponseEntity<EventResponse> updateEvent(
+            @PathVariable Integer eventId,
+            @PathVariable Integer userId,
+            @RequestBody EventRequest request) {
+        return ResponseEntity.ok(eventFacade.updateEvent(eventId, userId, request));
     }
 
     // Admin views all pending event requests

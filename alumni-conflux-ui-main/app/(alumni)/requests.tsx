@@ -1,3 +1,5 @@
+import { useRouter } from "expo-router";
+import { ChevronLeft } from "lucide-react-native";
 import React from "react";
 import {
   View,
@@ -7,6 +9,7 @@ import {
   TouchableOpacity,
   Alert
 } from "react-native";
+import { FontSizes, Spacing } from "../../constants/theme";
 
 type Request = {
   id: string;
@@ -15,6 +18,7 @@ type Request = {
 };
 
 export default function Requests() {
+  const router = useRouter();
 
   const requests: Request[] = [
     { id: "1", student: "Ali", topic: "React Help" },
@@ -27,8 +31,21 @@ export default function Requests() {
 
   return (
     <View style={styles.container}>
-
-      <Text style={styles.title}>Session Requests</Text>
+      {/* Header */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <ChevronLeft size={24} color="#F4EAD8" />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Session Requests</Text>
+          <Text style={styles.headerSubtitle}>
+            Manage mentoring requests
+          </Text>
+        </View>
+      </View>
 
       <FlatList
         data={requests}
@@ -71,14 +88,39 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: "#F4EAD8"
   },
-
-  title: {
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.LG,
+    paddingTop: 50,
+    paddingBottom: Spacing.XL,
+    gap: Spacing.MD,
+    backgroundColor: "#0F4C4F",
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(244, 234, 216, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(244, 234, 216, 0.3)",
+  },
+  headerContent: { flex: 1 },
+  headerTitle: {
+    fontFamily: "Poppins-SemiBold",
     fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15
+    color: "#F4EAD8",
+    fontWeight: "700",
+  },
+  headerSubtitle: {
+    fontFamily: "Poppins-Regular",
+    fontSize: 13,
+    color: "rgba(244, 234, 216, 0.8)",
+    marginTop: 4,
   },
 
   card: {

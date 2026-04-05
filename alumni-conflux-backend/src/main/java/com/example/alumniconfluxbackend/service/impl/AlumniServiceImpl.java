@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class AlumniServiceImpl implements AlumniService {
     private final AlumniRepository alumniRepository;
     private final UserRepository userRepository;
@@ -107,6 +108,7 @@ public class AlumniServiceImpl implements AlumniService {
             res.setUsername(a.getUser().getUsername());
             res.setEmail(a.getUser().getEmail());
         }
+        res.setProfilePicture(a.getProfilePicture());
 
         return res;
     }

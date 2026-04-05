@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { EyeOff } from "lucide-react-native";
 import { useState } from "react";
 import {
   ScrollView,
@@ -24,6 +25,9 @@ export default function Login() {
   const selectedRole = (params.role as string)?.toUpperCase();
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
     emailOrUsername?: string;
@@ -63,7 +67,6 @@ export default function Login() {
       if (response && response.role) {
         const userRole = response.role?.toUpperCase();
 
-        // If a specific role was selected, validate that the user has that role
         if (selectedRole && userRole !== selectedRole) {
           setLoading(false);
           Toast.show({
@@ -83,12 +86,10 @@ export default function Login() {
         setTimeout(() => {
           setLoading(false);
 
-          // Check if user needs to complete their profile
           const userRole = response.role?.toUpperCase();
           const userId = (response.userId || response.id).toString();
           const profileComplete = response.profileComplete !== false;
 
-          // Set auth data in context
           setAuthData({
             userId,
             userRole,
@@ -98,22 +99,8 @@ export default function Login() {
 
           if (userRole === "ADMIN") {
             router.replace("/(admin)");
-          } else if (
-            (userRole === "ALUMNI" || userRole === "STUDENT") &&
-            !profileComplete
-          ) {
-            // Redirect to profile if not complete
-            router.replace({
-              pathname: "/add-profile",
-              params: {
-                userId,
-                role: userRole,
-              },
-            });
           } else if (userRole === "ALUMNI") {
             router.replace("/(alumni)");
-          } else if (userRole === "STUDENT") {
-            router.replace("/(student)");
           } else {
             router.replace("/(student)");
           }
@@ -152,39 +139,70 @@ export default function Login() {
           <AuthHeader title="Welcome Back" subtitle="Sign in to continue" />
 
           <AuthCard>
-            <Text style={styles.label}>Email or Username</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Email or Username"
-              placeholderTextColor={colors.textLight}
-              value={emailOrUsername}
-              onChangeText={(text) => {
-                setEmailOrUsername(text);
-                if (errors.emailOrUsername) {
-                  setErrors({ ...errors, emailOrUsername: undefined });
-                }
-              }}
-              editable
-            />
+            <View style={styles.floatingLabelContainer}>
+              <Text
+                style={[
+                  styles.floatingLabel,
+                  (emailFocused || emailOrUsername.length > 0) &&
+                    styles.floatingLabelActive,
+                ]}
+              >
+                Email or Username
+              </Text>
+              <TextInput
+                style={[styles.textInput, styles.inputWithFloatingLabel]}
+                value={emailOrUsername}
+                onChangeText={(text) => {
+                  setEmailOrUsername(text);
+                  if (errors.emailOrUsername) {
+                    setErrors({ ...errors, emailOrUsername: undefined });
+                  }
+                }}
+                onFocus={() => setEmailFocused(true)}
+                onBlur={() => setEmailFocused(false)}
+                editable={!loading}
+              />
+            </View>
             {errors.emailOrUsername && (
               <Text style={styles.errorText}>{errors.emailOrUsername}</Text>
             )}
 
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Password"
-              placeholderTextColor={colors.textLight}
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (errors.password) {
-                  setErrors({ ...errors, password: undefined });
-                }
-              }}
-              secureTextEntry
-              editable
-            />
+            <View style={styles.floatingLabelContainer}>
+              <Text
+                style={[
+                  styles.floatingLabel,
+                  (passwordFocused || password.length > 0) &&
+                    styles.floatingLabelActive,
+                ]}
+              >
+                Password
+              </Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (errors.password) {
+                      setErrors({ ...errors, password: undefined });
+                    }
+                  }}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  secureTextEntry={!showPassword}
+                  editable={!loading}
+                />
+                {password.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.passwordIconButton}
+                    onPress={() => setShowPassword(!showPassword)}
+                    activeOpacity={0.7}
+                  >
+                    <EyeOff size={20} color={colors.textLight} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
             {errors.password && (
               <Text style={styles.errorText}>{errors.password}</Text>
             )}
@@ -208,8 +226,14 @@ export default function Login() {
 
           {selectedRole !== "ADMIN" && (
             <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>Don&apos;t have an account? </Text>
-              <TouchableOpacity onPress={() => router.push("/signup")}>
+              <Text style={styles.signupText}>
+                Don&apos;t have an account?{" "}
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  router.push(`/signup?role=${selectedRole || "STUDENT"}`)
+                }
+              >
                 <Text style={styles.signupLink}>Sign Up</Text>
               </TouchableOpacity>
             </View>
@@ -255,7 +279,52 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.Base,
     fontFamily: "Poppins-Regular",
     color: colors.textDark,
+  },
+  inputWithFloatingLabel: {
+    paddingTop: Spacing.LG,
+  },
+  passwordContainer: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingRight: Spacing.MD,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: Spacing.MD,
+    paddingTop: Spacing.LG,
+    fontSize: FontSizes.Base,
+    fontFamily: "Poppins-Regular",
+    color: colors.textDark,
+  },
+  passwordIconButton: {
+    padding: Spacing.SM,
+  },
+  floatingLabelContainer: {
+    width: "100%",
     marginBottom: Spacing.MD,
+    position: "relative" as const,
+  },
+  floatingLabel: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.Base,
+    color: colors.textLight,
+    position: "absolute" as const,
+    left: Spacing.MD,
+    top: Spacing.MD,
+    zIndex: 1,
+  },
+  floatingLabelActive: {
+    fontSize: FontSizes.XS,
+    top: -Spacing.SM,
+    backgroundColor: colors.white,
+    paddingHorizontal: Spacing.SM,
+    color: colors.primary,
+    fontFamily: "Poppins-Medium",
+    fontWeight: "500" as const,
   },
   errorText: {
     fontFamily: "Poppins-Regular",

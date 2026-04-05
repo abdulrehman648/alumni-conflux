@@ -16,5 +16,6 @@ public interface EventService {
     EventRegistrationResponse registerForEvent(Integer userId, Integer eventId);
     List<EventRegistrationResponse> getEventsRegisteredByUser(Integer userId);
     List<EventRegistrationResponse> getAttendeesForEvent(Integer userId, Integer eventId);
+    EventResponse updateEvent(Integer eventId, Integer userId, EventRequest request);
     EventResponse getEventById(Integer eventId);
 }

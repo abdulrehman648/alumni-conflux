@@ -26,6 +26,10 @@ public class EventFacade {
         return eventService.updateEventStatus(eventId, status);
     }
 
+    public EventResponse updateEvent(Integer eventId, Integer userId, EventRequest request) {
+        return eventService.updateEvent(eventId, userId, request);
+    }
+
     public List<EventResponse> getPendingEventRequests() {
         return eventService.getPendingEventRequests();
     }

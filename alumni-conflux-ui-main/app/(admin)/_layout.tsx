@@ -1,17 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { Drawer } from "expo-router/drawer";
+import { Stack, useRouter } from "expo-router";
 import { TouchableOpacity } from "react-native";
 
 export default function AdminLayout() {
   const router = useRouter();
 
   return (
-    <Drawer
+    <Stack
       screenOptions={{
         headerStyle: { backgroundColor: "#0F4C4F" },
         headerTintColor: "#F4EAD8",
-
+        headerShown: true,
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: "#fff" },
         headerRight: () => (
           <TouchableOpacity
             onPress={() => router.push("/(admin)/profile")}
@@ -22,11 +23,15 @@ export default function AdminLayout() {
         ),
       }}
     >
-      <Drawer.Screen name="index" options={{ title: "Home" }} />
-      <Drawer.Screen name="users" options={{ title: "Users" }} />
-      <Drawer.Screen name="mentors" options={{ title: "Mentors" }} />
-      <Drawer.Screen name="events" options={{ title: "Events" }} />
-      <Drawer.Screen name="profile" options={{ title: "Profile" }} />
-    </Drawer>
+      <Stack.Screen
+        name="index"
+        options={{ title: "Dashboard", headerShown: false }}
+      />
+      <Stack.Screen name="users" options={{ title: "Users" }} />
+      <Stack.Screen name="mentors" options={{ title: "Mentors" }} />
+      <Stack.Screen name="events" options={{ title: "Events" }} />
+      <Stack.Screen name="donations" options={{ title: "Donations" }} />
+      <Stack.Screen name="profile" options={{ title: "Profile" }} />
+    </Stack>
   );
 }

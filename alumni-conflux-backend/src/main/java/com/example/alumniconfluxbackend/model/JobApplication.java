@@ -22,8 +22,8 @@ public class JobApplication {
     private Job job;
 
     @ManyToOne
-    @JoinColumn(name = "student_id", nullable = false)
-    private Student student;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User applicant;
     
     private String status = "PENDING"; // PENDING, REVIEWING, ACCEPTED, REJECTED
     
@@ -47,12 +47,12 @@ public class JobApplication {
         this.job = job;
     }
 
-    public Student getStudent() {
-        return student;
+    public User getApplicant() {
+        return applicant;
     }
 
-    public void setStudent(Student student) {
-        this.student = student;
+    public void setApplicant(User applicant) {
+        this.applicant = applicant;
     }
 
     public String getStatus() {

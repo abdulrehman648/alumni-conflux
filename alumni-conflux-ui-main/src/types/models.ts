@@ -206,3 +206,38 @@ export interface FilterOptions {
     max: number;
   };
 }
+
+// Donation & Campaign Models
+export interface AccountDetails {
+  accountName: string;
+  accountNumber: string;
+  iban: string;
+  bankName: string;
+}
+
+export interface Campaign {
+  id: number;
+  title: string;
+  description: string;
+  type: "DONATION" | "FUND";
+  accountDetails: AccountDetails;
+  targetAmount: number;
+  collectedAmount: number;
+  deadline: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface Contribution {
+  id: number;
+  campaignId: number;
+  campaignTitle: string;
+  alumniName: string;
+  amount: number;
+  screenshotUrl: string;
+  transactionId?: string;
+  note?: string;
+  status: "PENDING" | "VERIFIED" | "REJECTED";
+  submittedAt: string;
+  verifiedAt?: string;
+}

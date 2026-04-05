@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 import colors from "../src/theme/colors";
 
 export default function Splash() {
@@ -14,8 +14,10 @@ export default function Splash() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Alumni Conflux</Text>
-      <Text style={styles.subtitle}>Connecting Futures</Text>
+      <Image
+        source={require("../assets/images/alumni-conflux-logo.jpeg")}
+        style={styles.logo}
+      />
     </View>
   );
 }
@@ -27,14 +29,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: colors.white,
-  },
-  subtitle: {
-    marginTop: 10,
-    fontSize: 16,
-    color: colors.lightBlue,
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 30,
+    resizeMode: "contain",
   },
 });

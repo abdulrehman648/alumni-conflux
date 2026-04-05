@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
 import {
-  TextInput,
-  View,
-  Text,
   StyleSheet,
-  ViewStyle,
+  Text,
+  TextInput,
   TextInputProps,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import colors from '../theme/colors';
-import { FontFamily, FontSizes, Spacing, BorderRadius } from '../../constants/theme';
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from "react-native";
+import {
+  BorderRadius,
+  FontFamily,
+  FontSizes,
+  Spacing,
+} from "../../constants/theme";
+import colors from "../theme/colors";
 
 interface AuthInputProps extends TextInputProps {
   placeholder: string;
@@ -34,6 +40,7 @@ export default function AuthInput({
   ...rest
 }: AuthInputProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <View style={[containerStyle]}>
@@ -59,11 +66,23 @@ export default function AuthInput({
           placeholderTextColor={colors.textLight}
           value={value}
           onChangeText={onChangeText}
-          secureTextEntry={secureTextEntry}
+          secureTextEntry={secureTextEntry && !showPassword}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           {...rest}
         />
+        {secureTextEntry && (
+          <TouchableOpacity
+            onPress={() => setShowPassword(!showPassword)}
+            style={styles.eyeButton}
+          >
+            <Ionicons
+              name={showPassword ? "eye-off" : "eye"}
+              size={20}
+              color={isFocused ? colors.primary : colors.textLight}
+            />
+          </TouchableOpacity>
+        )}
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
@@ -76,11 +95,11 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.SM,
     color: colors.textDark,
     marginBottom: Spacing.SM,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     height: 56,
     backgroundColor: colors.white,
     borderRadius: BorderRadius.LG,
@@ -88,7 +107,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingHorizontal: Spacing.LG,
     elevation: 0,
-    shadowColor: 'transparent',
+    shadowColor: "transparent",
   },
   inputContainerFocused: {
     borderColor: colors.primary,
@@ -109,7 +128,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     fontSize: FontSizes.Base,
     color: colors.textDark,
-    fontWeight: '400',
+    fontWeight: "400",
     padding: 0,
   },
   errorText: {
@@ -117,6 +136,10 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.XS,
     color: colors.danger,
     marginTop: Spacing.SM,
-    fontWeight: '400',
+    fontWeight: "400",
+  },
+  eyeButton: {
+    padding: Spacing.SM,
+    marginLeft: Spacing.SM,
   },
 });

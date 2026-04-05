@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class StudentServiceImpl implements StudentService {
 
     private final StudentRepository studentRepository;
@@ -25,7 +26,6 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    @Transactional
     public StudentResponse createOrUpdateStudent(Integer userId, StudentRequest request) {
 
         User user = userRepository.findById(userId)
@@ -85,7 +85,7 @@ public class StudentServiceImpl implements StudentService {
 
         StudentResponse res = new StudentResponse();
 
-        res.setStudentId(student.getStudentId());
+        res.setStudentId(student.getId());
         res.setInstitutionName(student.getInstitutionName());
         res.setExpectedGraduationYear(student.getExpectedGraduationYear());
 
@@ -101,6 +101,7 @@ public class StudentServiceImpl implements StudentService {
             res.setUsername(student.getUser().getUsername());
             res.setEmail(student.getUser().getEmail());
         }
+        res.setProfilePicture(student.getProfilePicture());
 
         return res;
     }

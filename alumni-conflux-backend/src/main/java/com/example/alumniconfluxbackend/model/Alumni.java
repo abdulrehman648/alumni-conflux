@@ -23,6 +23,7 @@ public class Alumni {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Integer id;
 
     @Column(nullable = false)
@@ -31,6 +32,7 @@ public class Alumni {
     private Short graduationYear;
     private String industry;
     private String currentCompany;
+    private boolean isAvailableForMentorship = false;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb", nullable = false)
@@ -39,6 +41,9 @@ public class Alumni {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
+
+    @Column(name = "profile_picture")
+    private String profilePicture;
 
     @OneToMany(mappedBy = "alumni", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Job> jobs;
@@ -105,5 +110,21 @@ public class Alumni {
 
     public void setJobs(List<Job> jobs) {
         this.jobs = jobs;
+    }
+
+    public boolean isAvailableForMentorship() {
+        return isAvailableForMentorship;
+    }
+
+    public void setAvailableForMentorship(boolean availableForMentorship) {
+        isAvailableForMentorship = availableForMentorship;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
     }
 }

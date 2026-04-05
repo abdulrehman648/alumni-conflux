@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { EyeOff } from "lucide-react-native";
 import { useState } from "react";
 import {
   ScrollView,
@@ -28,6 +29,8 @@ export default function SignUp() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -82,7 +85,6 @@ export default function SignUp() {
             setError(result.message || "Username already taken");
             setLoading(false);
           }
-
         } catch (err: any) {
           setError(err.response?.data?.message || "Failed to check username");
           setLoading(false);
@@ -206,14 +208,12 @@ export default function SignUp() {
 
                 setLoading(false);
 
-                // Redirect to profile completion screen instead of dashboard
-                router.replace({
-                  pathname: "/add-profile",
-                  params: {
-                    userId: userIdStr,
-                    role: role || "STUDENT",
-                  },
-                });
+                // Redirect directly to dashboard instead of profile completion
+                if (role === "ALUMNI") {
+                  router.replace("/(alumni)");
+                } else {
+                  router.replace("/(student)");
+                }
               } else {
                 setError(signupResult.message || "Failed to create account");
                 setLoading(false);
@@ -328,16 +328,37 @@ export default function SignUp() {
 
         {step === 4 && (
           <AuthCard>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="••••••••"
-              placeholderTextColor={colors.textLight}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              editable
-            />
+            <View style={styles.floatingLabelContainer}>
+              <Text
+                style={[
+                  styles.floatingLabel,
+                  (passwordFocused || password.length > 0) &&
+                    styles.floatingLabelActive,
+                ]}
+              >
+                Password
+              </Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  value={password}
+                  onChangeText={setPassword}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  secureTextEntry={!showPassword}
+                  editable
+                />
+                {password.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.passwordIconButton}
+                    onPress={() => setShowPassword(!showPassword)}
+                    activeOpacity={0.7}
+                  >
+                    <EyeOff size={20} color={colors.textLight} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
             <View style={styles.passwordRequirements}>
               <Text
                 style={[
@@ -351,7 +372,7 @@ export default function SignUp() {
                 style={[
                   styles.requirementText,
                   /(?=.*[a-z])(?=.*[A-Z])/.test(password) &&
-                  styles.requirementMet,
+                    styles.requirementMet,
                 ]}
               >
                 {/(?=.*[a-z])(?=.*[A-Z])/.test(password) ? "✓" : "○"} Mix of
@@ -514,6 +535,49 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-Regular",
     color: colors.textDark,
     marginBottom: Spacing.MD,
+  },
+  passwordContainer: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingRight: Spacing.MD,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: Spacing.MD,
+    paddingTop: Spacing.LG,
+    fontSize: FontSizes.Base,
+    fontFamily: "Poppins-Regular",
+    color: colors.textDark,
+  },
+  passwordIconButton: {
+    padding: Spacing.SM,
+  },
+  floatingLabelContainer: {
+    width: "100%",
+    marginBottom: Spacing.MD,
+    position: "relative" as const,
+  },
+  floatingLabel: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.Base,
+    color: colors.textLight,
+    position: "absolute" as const,
+    left: Spacing.MD,
+    top: Spacing.MD,
+    zIndex: 1,
+  },
+  floatingLabelActive: {
+    fontSize: FontSizes.XS,
+    top: -Spacing.SM,
+    backgroundColor: colors.white,
+    paddingHorizontal: Spacing.SM,
+    color: colors.primary,
+    fontFamily: "Poppins-Medium",
+    fontWeight: "500" as const,
   },
   hintText: {
     fontFamily: "Poppins-Regular",

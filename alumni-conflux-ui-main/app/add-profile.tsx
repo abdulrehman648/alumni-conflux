@@ -1,6 +1,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  Platform,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -47,7 +49,7 @@ export default function AddProfile() {
     role: string;
   }>();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   // Use param values or defaults
   const userId = paramUserId;
@@ -75,85 +77,72 @@ export default function AddProfile() {
   const isAlumni = role?.toUpperCase() === "ALUMNI";
 
   const handleSubmit = async () => {
-    setError("");
+    const newErrors: { [key: string]: string } = {};
 
     // Validation
     if (!institutionName.trim()) {
-      setError("Institution name is required");
-      return;
+      newErrors.institutionName = "Institution name is required";
     }
 
     if (isStudent) {
       if (!expectedGraduationYear.trim()) {
-        setError("Expected graduation year is required");
-        return;
-      }
-      if (!/^\d{4}$/.test(expectedGraduationYear)) {
-        setError("Please enter a valid year (YYYY)");
-        return;
+        newErrors.expectedGraduationYear =
+          "Expected graduation year is required";
+      } else if (!/^\d{4}$/.test(expectedGraduationYear)) {
+        newErrors.expectedGraduationYear = "Please enter a valid year (YYYY)";
       }
       if (!department.trim()) {
-        setError("Department is required");
-        return;
+        newErrors.department = "Department is required";
       }
       if (!degreeProgram.trim()) {
-        setError("Degree program is required");
-        return;
+        newErrors.degreeProgram = "Degree program is required";
       }
       if (!major.trim()) {
-        setError("Major is required");
-        return;
+        newErrors.major = "Major is required";
       }
       if (!currentSemester.trim()) {
-        setError("Current semester is required");
-        return;
-      }
-      if (!/^\d+$/.test(currentSemester)) {
-        setError("Semester must be a number");
-        return;
+        newErrors.currentSemester = "Current semester is required";
+      } else if (!/^\d+$/.test(currentSemester)) {
+        newErrors.currentSemester = "Semester must be a number";
       }
       if (!skills.trim()) {
-        setError("Please add at least one skill");
-        return;
+        newErrors.skills = "Please add at least one skill";
       }
       if (!careerPreferences.trim()) {
-        setError("Please add at least one career preference");
-        return;
+        newErrors.careerPreferences =
+          "Please add at least one career preference";
       }
     }
 
     if (isAlumni) {
       if (!graduationYear.trim()) {
-        setError("Graduation year is required");
-        return;
-      }
-      if (!/^\d{4}$/.test(graduationYear)) {
-        setError("Please enter a valid year (YYYY)");
-        return;
+        newErrors.graduationYear = "Graduation year is required";
+      } else if (!/^\d{4}$/.test(graduationYear)) {
+        newErrors.graduationYear = "Please enter a valid year (YYYY)";
       }
       if (!industry.trim()) {
-        setError("Industry is required");
-        return;
+        newErrors.industry = "Industry is required";
       }
       if (!currentCompany.trim()) {
-        setError("Current company is required");
-        return;
+        newErrors.currentCompany = "Current company is required";
       }
       if (!jobTitle.trim()) {
-        setError("Job title is required");
-        return;
+        newErrors.jobTitle = "Job title is required";
       }
       if (!skills.trim()) {
-        setError("Please add at least one skill");
-        return;
+        newErrors.skills = "Please add at least one skill";
       }
       if (!achievements.trim()) {
-        setError("Please add at least one achievement");
-        return;
+        newErrors.achievements = "Please add at least one achievement";
       }
     }
 
-    setLoading(true);
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
 
     try {
       const skillsArray = skills
@@ -197,7 +186,7 @@ export default function AddProfile() {
         };
       }
 
-      const profileResponse = isStudent 
+      const profileResponse = isStudent
         ? await profileService.saveStudentProfile(Number(userId), payload)
         : await profileService.saveAlumniProfile(Number(userId), payload);
 
@@ -228,9 +217,9 @@ export default function AddProfile() {
           },
         });
 
-        // Update auth context with profile completion status
         setAuthData({
           userId: userId!,
+
           userRole: role!,
           fullName: "",
           profileComplete: true,
@@ -238,27 +227,34 @@ export default function AddProfile() {
 
         setLoading(false);
 
-        // Navigate to appropriate dashboard
         if (isStudent) {
-          router.replace("/(student)");
+          router.replace("/(student)/profile");
         } else if (isAlumni) {
-          router.replace("/(alumni)");
+          router.replace("/(alumni)/profile");
         } else {
           router.replace("/(admin)");
         }
       } else {
-        setError("Failed to save profile. Please try again.");
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Failed to save profile. Please try again.",
+        });
         setLoading(false);
       }
     } catch (err: any) {
       console.error("Profile creation error:", err);
-      setError(err.response?.data?.message || "Failed to create profile");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: err.response?.data?.message || "Failed to create profile",
+      });
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
@@ -270,142 +266,302 @@ export default function AddProfile() {
         />
 
         <AuthCard>
-          <Text style={styles.label}>Institution Name *</Text>
+          <Text style={styles.label}>Institution Name</Text>
           <TextInput
-            style={styles.textInput}
-            placeholder="University of Education Lahore"
+            style={[
+              styles.textInput,
+              errors.institutionName && styles.textInputError,
+            ]}
+            placeholder="Institution Name"
             placeholderTextColor={colors.textLight}
             value={institutionName}
-            onChangeText={setInstitutionName}
+            onChangeText={(text) => {
+              setInstitutionName(text);
+              if (errors.institutionName && text.trim()) {
+                const newErrors = { ...errors };
+                delete newErrors.institutionName;
+                setErrors(newErrors);
+              }
+            }}
             editable={!loading}
           />
+          {errors.institutionName && (
+            <Text style={styles.errorText}>{errors.institutionName}</Text>
+          )}
 
           {isStudent && (
             <>
-              <Text style={styles.label}>Expected Graduation Year *</Text>
+              <Text style={styles.label}>Expected Graduation Year</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  errors.expectedGraduationYear && styles.textInputError,
+                ]}
                 placeholder="2026"
                 placeholderTextColor={colors.textLight}
                 value={expectedGraduationYear}
-                onChangeText={setExpectedGraduationYear}
+                onChangeText={(text) => {
+                  setExpectedGraduationYear(text);
+                  if (errors.expectedGraduationYear && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.expectedGraduationYear;
+                    setErrors(newErrors);
+                  }
+                }}
                 keyboardType="number-pad"
                 maxLength={4}
                 editable={!loading}
               />
+              {errors.expectedGraduationYear && (
+                <Text style={styles.errorText}>
+                  {errors.expectedGraduationYear}
+                </Text>
+              )}
 
-              <Text style={styles.label}>Department *</Text>
+              <Text style={styles.label}>Department</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  errors.department && styles.textInputError,
+                ]}
                 placeholder="Computer Science"
                 placeholderTextColor={colors.textLight}
                 value={department}
-                onChangeText={setDepartment}
+                onChangeText={(text) => {
+                  setDepartment(text);
+                  if (errors.department && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.department;
+                    setErrors(newErrors);
+                  }
+                }}
                 editable={!loading}
               />
+              {errors.department && (
+                <Text style={styles.errorText}>{errors.department}</Text>
+              )}
 
-              <Text style={styles.label}>Degree Program *</Text>
+              <Text style={styles.label}>Degree Program</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  errors.degreeProgram && styles.textInputError,
+                ]}
                 placeholder="BSIT"
                 placeholderTextColor={colors.textLight}
                 value={degreeProgram}
-                onChangeText={setDegreeProgram}
+                onChangeText={(text) => {
+                  setDegreeProgram(text);
+                  if (errors.degreeProgram && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.degreeProgram;
+                    setErrors(newErrors);
+                  }
+                }}
                 editable={!loading}
               />
+              {errors.degreeProgram && (
+                <Text style={styles.errorText}>{errors.degreeProgram}</Text>
+              )}
 
               <Text style={styles.label}>Major *</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  errors.major && styles.textInputError,
+                ]}
                 placeholder="Software Engineering"
                 placeholderTextColor={colors.textLight}
                 value={major}
-                onChangeText={setMajor}
+                onChangeText={(text) => {
+                  setMajor(text);
+                  if (errors.major && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.major;
+                    setErrors(newErrors);
+                  }
+                }}
                 editable={!loading}
               />
+              {errors.major && (
+                <Text style={styles.errorText}>{errors.major}</Text>
+              )}
 
               <Text style={styles.label}>Current Semester *</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  errors.currentSemester && styles.textInputError,
+                ]}
                 placeholder="6"
                 placeholderTextColor={colors.textLight}
                 value={currentSemester}
-                onChangeText={setCurrentSemester}
+                onChangeText={(text) => {
+                  setCurrentSemester(text);
+                  if (errors.currentSemester && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.currentSemester;
+                    setErrors(newErrors);
+                  }
+                }}
                 keyboardType="number-pad"
                 editable={!loading}
               />
+              {errors.currentSemester && (
+                <Text style={styles.errorText}>{errors.currentSemester}</Text>
+              )}
 
               <Text style={styles.label}>Skills (comma-separated) *</Text>
               <TextInput
-                style={[styles.textInput, styles.multilineInput]}
+                style={[
+                  styles.textInput,
+                  styles.multilineInput,
+                  errors.skills && styles.textInputError,
+                ]}
                 placeholder="Java, Spring Boot, MySQL"
                 placeholderTextColor={colors.textLight}
                 value={skills}
-                onChangeText={setSkills}
+                onChangeText={(text) => {
+                  setSkills(text);
+                  if (errors.skills && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.skills;
+                    setErrors(newErrors);
+                  }
+                }}
                 multiline
                 numberOfLines={3}
                 editable={!loading}
               />
+              {errors.skills && (
+                <Text style={styles.errorText}>{errors.skills}</Text>
+              )}
 
               <Text style={styles.label}>
                 Career Preferences (comma-separated) *
               </Text>
               <TextInput
-                style={[styles.textInput, styles.multilineInput]}
+                style={[
+                  styles.textInput,
+                  styles.multilineInput,
+                  errors.careerPreferences && styles.textInputError,
+                ]}
                 placeholder="Backend Developer, Java Developer"
                 placeholderTextColor={colors.textLight}
                 value={careerPreferences}
-                onChangeText={setCareerPreferences}
+                onChangeText={(text) => {
+                  setCareerPreferences(text);
+                  if (errors.careerPreferences && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.careerPreferences;
+                    setErrors(newErrors);
+                  }
+                }}
                 multiline
                 numberOfLines={3}
                 editable={!loading}
               />
+              {errors.careerPreferences && (
+                <Text style={styles.errorText}>{errors.careerPreferences}</Text>
+              )}
             </>
           )}
 
           {isAlumni && (
             <>
-              <Text style={styles.label}>Graduation Year *</Text>
+              <Text style={styles.label}>Graduation Year</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  errors.graduationYear && styles.textInputError,
+                ]}
                 placeholder="2023"
                 placeholderTextColor={colors.textLight}
                 value={graduationYear}
-                onChangeText={setGraduationYear}
+                onChangeText={(text) => {
+                  setGraduationYear(text);
+                  if (errors.graduationYear && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.graduationYear;
+                    setErrors(newErrors);
+                  }
+                }}
                 keyboardType="number-pad"
                 maxLength={4}
                 editable={!loading}
               />
+              {errors.graduationYear && (
+                <Text style={styles.errorText}>{errors.graduationYear}</Text>
+              )}
 
               <Text style={styles.label}>Industry *</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  errors.industry && styles.textInputError,
+                ]}
                 placeholder="Software Engineering"
                 placeholderTextColor={colors.textLight}
                 value={industry}
-                onChangeText={setIndustry}
+                onChangeText={(text) => {
+                  setIndustry(text);
+                  if (errors.industry && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.industry;
+                    setErrors(newErrors);
+                  }
+                }}
                 editable={!loading}
               />
+              {errors.industry && (
+                <Text style={styles.errorText}>{errors.industry}</Text>
+              )}
 
               <Text style={styles.label}>Current Company *</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  errors.currentCompany && styles.textInputError,
+                ]}
                 placeholder="Tech Solutions Pvt Ltd"
                 placeholderTextColor={colors.textLight}
                 value={currentCompany}
-                onChangeText={setCurrentCompany}
+                onChangeText={(text) => {
+                  setCurrentCompany(text);
+                  if (errors.currentCompany && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.currentCompany;
+                    setErrors(newErrors);
+                  }
+                }}
                 editable={!loading}
               />
+              {errors.currentCompany && (
+                <Text style={styles.errorText}>{errors.currentCompany}</Text>
+              )}
 
               <Text style={styles.label}>Job Title *</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  errors.jobTitle && styles.textInputError,
+                ]}
                 placeholder="Backend Developer"
                 placeholderTextColor={colors.textLight}
                 value={jobTitle}
-                onChangeText={setJobTitle}
+                onChangeText={(text) => {
+                  setJobTitle(text);
+                  if (errors.jobTitle && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.jobTitle;
+                    setErrors(newErrors);
+                  }
+                }}
                 editable={!loading}
               />
+              {errors.jobTitle && (
+                <Text style={styles.errorText}>{errors.jobTitle}</Text>
+              )}
 
               <Text style={styles.label}>Experience Level *</Text>
               <View style={styles.pickerContainer}>
@@ -434,31 +590,57 @@ export default function AddProfile() {
 
               <Text style={styles.label}>Skills (comma-separated) *</Text>
               <TextInput
-                style={[styles.textInput, styles.multilineInput]}
+                style={[
+                  styles.textInput,
+                  styles.multilineInput,
+                  errors.skills && styles.textInputError,
+                ]}
                 placeholder="Java, Spring Boot, MySQL, REST APIs"
                 placeholderTextColor={colors.textLight}
                 value={skills}
-                onChangeText={setSkills}
+                onChangeText={(text) => {
+                  setSkills(text);
+                  if (errors.skills && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.skills;
+                    setErrors(newErrors);
+                  }
+                }}
                 multiline
                 numberOfLines={3}
                 editable={!loading}
               />
+              {errors.skills && (
+                <Text style={styles.errorText}>{errors.skills}</Text>
+              )}
 
               <Text style={styles.label}>Achievements (comma-separated) *</Text>
               <TextInput
-                style={[styles.textInput, styles.multilineInput]}
+                style={[
+                  styles.textInput,
+                  styles.multilineInput,
+                  errors.achievements && styles.textInputError,
+                ]}
                 placeholder="Built alumni management system as final year project"
                 placeholderTextColor={colors.textLight}
                 value={achievements}
-                onChangeText={setAchievements}
+                onChangeText={(text) => {
+                  setAchievements(text);
+                  if (errors.achievements && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.achievements;
+                    setErrors(newErrors);
+                  }
+                }}
                 multiline
                 numberOfLines={3}
                 editable={!loading}
               />
+              {errors.achievements && (
+                <Text style={styles.errorText}>{errors.achievements}</Text>
+              )}
             </>
           )}
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </AuthCard>
 
         <View style={styles.buttonContainer}>
@@ -471,7 +653,7 @@ export default function AddProfile() {
           />
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -479,10 +661,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    paddingTop: Platform.OS === "android" ? Spacing.MD : 0,
   },
   contentContainer: {
     flexGrow: 1,
     padding: Spacing.LG,
+    paddingTop: Spacing.XXL,
     paddingBottom: Spacing.XXL,
     alignItems: "center",
     justifyContent: "center",
@@ -508,6 +692,10 @@ const styles = StyleSheet.create({
   multilineInput: {
     textAlignVertical: "top",
     minHeight: 80,
+  },
+  textInputError: {
+    borderColor: "#ef4444",
+    backgroundColor: "#fef2f2",
   },
   pickerContainer: {
     flexDirection: "row",

@@ -14,12 +14,14 @@ import com.example.alumniconfluxbackend.util.EventStatus;
 import com.example.alumniconfluxbackend.util.Role;
 import com.example.alumniconfluxbackend.util.TargetAudience;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class EventServiceImpl implements EventService {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -29,12 +31,13 @@ public class EventServiceImpl implements EventService {
     private final UserRepository userRepository;
 
     public EventServiceImpl(EventRepository eventRepository,
-                          EventRegistrationRepository eventRegistrationRepository,
-                          UserRepository userRepository) {
+            EventRegistrationRepository eventRegistrationRepository,
+            UserRepository userRepository) {
         this.eventRepository = eventRepository;
         this.eventRegistrationRepository = eventRegistrationRepository;
         this.userRepository = userRepository;
     }
+
     @Override
     public EventResponse createEventRequest(Integer userId, EventRequest request) {
         User user = userRepository.findById(userId)
@@ -44,22 +47,44 @@ public class EventServiceImpl implements EventService {
         event.setTitle(request.getTitle());
         event.setDescription(request.getDescription());
         event.setEventDate(request.getEventDate());
-        event.setLocation(request.getLocation());
 
         if (user.getRole() == Role.ALUMNI && user.getAlumni() != null) {
             event.setCreator(user.getAlumni());
+            event.setLocation(null); // Alumni cannot set location
         } else if (user.getRole() == Role.ADMIN) {
             event.setAdminCreator(user);
+            event.setLocation(request.getLocation()); // Admin can set location
         } else {
             throw new RuntimeException("Only ALUMNI and ADMIN can create events");
         }
 
         event.setStatus(user.getRole() == Role.ADMIN ? EventStatus.APPROVED : EventStatus.PENDING);
 
-        // Target audience logic
         if (request.getTargetAudience() != null) {
             event.setTargetAudience(request.getTargetAudience());
         }
+
+        eventRepository.save(event);
+        return mapToEventResponse(event);
+    }
+
+    @Override
+    public EventResponse updateEvent(Integer eventId, Integer userId, EventRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getRole() != Role.ADMIN) {
+            throw new RuntimeException("Only ADMIN can update event details");
+        }
+
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Event not found"));
+
+        if (request.getTitle() != null) event.setTitle(request.getTitle());
+        if (request.getDescription() != null) event.setDescription(request.getDescription());
+        if (request.getEventDate() != null) event.setEventDate(request.getEventDate());
+        if (request.getLocation() != null) event.setLocation(request.getLocation());
+        if (request.getTargetAudience() != null) event.setTargetAudience(request.getTargetAudience());
 
         eventRepository.save(event);
         return mapToEventResponse(event);
@@ -86,9 +111,9 @@ public class EventServiceImpl implements EventService {
     public List<EventResponse> getAvailableEvents(Integer userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         TargetAudience userAudience = mapRoleToAudience(user.getRole());
-        
+
         return eventRepository.findAvailableEventsForAudience(userAudience)
                 .stream()
                 .map(this::mapToEventResponse)
@@ -99,7 +124,7 @@ public class EventServiceImpl implements EventService {
     public List<EventResponse> getEventsCreatedByUser(Integer userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         List<Event> events;
         if (user.getRole() == Role.ALUMNI && user.getAlumni() != null) {
             events = eventRepository.findByCreatorId(user.getAlumni().getId());
@@ -125,22 +150,13 @@ public class EventServiceImpl implements EventService {
             throw new RuntimeException("Cannot register for an unapproved event");
         }
 
-        EventRegistration registration = new EventRegistration();
-        registration.setEvent(event);
-        if (user.getStudent() != null) {
-            registration.setStudent(user.getStudent());
-        } else if (user.getAlumni() != null) {
-            registration.setAlumni(user.getAlumni());
-        } else {
-            throw new RuntimeException("Only Students and Alumni can register for events");
+        if (eventRegistrationRepository.existsByEventIdAndUserId(eventId, userId)) {
+            throw new RuntimeException("You are already registered for this event");
         }
 
-        if (registration.getStudent() != null && eventRegistrationRepository.existsByEventIdAndStudent_StudentId(eventId, user.getStudent().getStudentId())) {
-            throw new RuntimeException("You are already registered for this event");
-        }
-        if (registration.getAlumni() != null && eventRegistrationRepository.existsByEventIdAndAlumniId(eventId, user.getAlumni().getId())) {
-            throw new RuntimeException("You are already registered for this event");
-        }
+        EventRegistration registration = new EventRegistration();
+        registration.setEvent(event);
+        registration.setUser(user);
 
         eventRegistrationRepository.save(registration);
         return mapToRegistrationResponse(registration);
@@ -148,19 +164,8 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventRegistrationResponse> getEventsRegisteredByUser(Integer userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        List<EventRegistration> registrations;
-        if (user.getStudent() != null) {
-            registrations = eventRegistrationRepository.findByStudent_StudentId(user.getStudent().getStudentId());
-        } else if (user.getAlumni() != null) {
-            registrations = eventRegistrationRepository.findByAlumniId(user.getAlumni().getId());
-        } else {
-            registrations = List.of();
-        }
-
-        return registrations.stream()
+        return eventRegistrationRepository.findByUserId(userId)
+                .stream()
                 .map(this::mapToRegistrationResponse)
                 .collect(Collectors.toList());
     }
@@ -169,16 +174,15 @@ public class EventServiceImpl implements EventService {
     public List<EventRegistrationResponse> getAttendeesForEvent(Integer userId, Integer eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("Event not found"));
-        
-        // Only creator or admin can see attendee list
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         boolean isCreator = (event.getCreator() != null && event.getCreator().getUser().getId().equals(userId))
                 || (event.getAdminCreator() != null && event.getAdminCreator().getId().equals(userId));
 
         if (user.getRole() != Role.ADMIN && !isCreator) {
-             throw new RuntimeException("Access denied to attendee list");
+            throw new RuntimeException("Access denied to attendee list");
         }
 
         return eventRegistrationRepository.findByEventId(eventId)
@@ -194,13 +198,14 @@ public class EventServiceImpl implements EventService {
         return mapToEventResponse(event);
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────────
-
     private TargetAudience mapRoleToAudience(Role role) {
         switch (role) {
-            case STUDENT: return TargetAudience.STUDENT;
-            case ALUMNI: return TargetAudience.ALUMNI;
-            default: return TargetAudience.ALL;
+            case STUDENT:
+                return TargetAudience.STUDENT;
+            case ALUMNI:
+                return TargetAudience.ALUMNI;
+            default:
+                return TargetAudience.ALL;
         }
     }
 
@@ -230,14 +235,14 @@ public class EventServiceImpl implements EventService {
         res.setId(reg.getId());
         res.setEventId(reg.getEvent().getId());
         res.setEventTitle(reg.getEvent().getTitle());
-        User regUser = reg.getStudent() != null ? reg.getStudent().getUser() 
-                : (reg.getAlumni() != null ? reg.getAlumni().getUser() : null);
-        
+
+        User regUser = reg.getUser();
         if (regUser != null) {
             res.setUserId(regUser.getId());
             res.setUserName(regUser.getFullName());
         }
-        res.setRegistrationDate(reg.getRegistrationDate() != null ? reg.getRegistrationDate().format(DATE_FORMATTER) : null);
+        res.setRegistrationDate(
+                reg.getRegistrationDate() != null ? reg.getRegistrationDate().format(DATE_FORMATTER) : null);
         return res;
     }
 }

@@ -20,7 +20,8 @@ public class Student {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer studentId;
+    @Column(name = "id")
+    private Integer id;
 
     @Column(nullable = false)
     private String institutionName;
@@ -35,12 +36,15 @@ public class Student {
     @JoinColumn(name = "user_id")
     private User user;
 
-    public Integer getStudentId() {
-        return studentId;
+    @Column(name = "profile_picture")
+    private String profilePicture;
+
+    public Integer getId() {
+        return id;
     }
 
-    public void setStudentId(Integer studentId) {
-        this.studentId = studentId;
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getInstitutionName() {
@@ -73,5 +77,13 @@ public class Student {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
     }
 }
