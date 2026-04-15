@@ -39,6 +39,9 @@ interface AlumniProfile {
   experienceLevel: string;
   skills: string[];
   achievements: string[];
+  careerPath: string[];
+  certifications: string[];
+  advice: string;
 }
 
 export default function AddProfile() {
@@ -72,6 +75,9 @@ export default function AddProfile() {
   const [jobTitle, setJobTitle] = useState("");
   const [experienceLevel, setExperienceLevel] = useState("FRESHER");
   const [achievements, setAchievements] = useState("");
+  const [careerPath, setCareerPath] = useState("");
+  const [certifications, setCertifications] = useState("");
+  const [advice, setAdvice] = useState("");
 
   const isStudent = role?.toUpperCase() === "STUDENT";
   const isAlumni = role?.toUpperCase() === "ALUMNI";
@@ -135,6 +141,12 @@ export default function AddProfile() {
       if (!achievements.trim()) {
         newErrors.achievements = "Please add at least one achievement";
       }
+      if (!careerPath.trim()) {
+        newErrors.careerPath = "Please list your career roles (comma-separated)";
+      }
+      if (!advice.trim()) {
+        newErrors.advice = "Please provide some career advice for students";
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -183,6 +195,15 @@ export default function AddProfile() {
           experienceLevel: experienceLevel.toUpperCase(),
           skills: skillsArray,
           achievements: achievementsArray,
+          careerPath: careerPath
+            .split(",")
+            .map((c) => c.trim())
+            .filter((c) => c.length > 0),
+          certifications: certifications
+            .split(",")
+            .map((c) => c.trim())
+            .filter((c) => c.length > 0),
+          advice: advice.trim(),
         };
       }
 
@@ -638,6 +659,76 @@ export default function AddProfile() {
               />
               {errors.achievements && (
                 <Text style={styles.errorText}>{errors.achievements}</Text>
+              )}
+
+              <Text style={styles.label}>Career Journey (comma-separated roles) *</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  styles.multilineInput,
+                  errors.careerPath && styles.textInputError,
+                ]}
+                placeholder="Intern at TechSoft, Developer at WebCore, Lead at CloudScale"
+                placeholderTextColor={colors.textLight}
+                value={careerPath}
+                onChangeText={(text) => {
+                  setCareerPath(text);
+                  if (errors.careerPath && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.careerPath;
+                    setErrors(newErrors);
+                  }
+                }}
+                multiline
+                numberOfLines={3}
+                editable={!loading}
+              />
+              {errors.careerPath && (
+                <Text style={styles.errorText}>{errors.careerPath}</Text>
+              )}
+
+              <Text style={styles.label}>Certifications (comma-separated)</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  styles.multilineInput,
+                  errors.certifications && styles.textInputError,
+                ]}
+                placeholder="AWS Certified, Oracle Java Professional"
+                placeholderTextColor={colors.textLight}
+                value={certifications}
+                onChangeText={(text) => {
+                  setCertifications(text);
+                }}
+                multiline
+                numberOfLines={2}
+                editable={!loading}
+              />
+
+              <Text style={styles.label}>Career Advice for Students *</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  styles.multilineInput,
+                  errors.advice && styles.textInputError,
+                ]}
+                placeholder="Focus on problem-solving and projects rather than just theory."
+                placeholderTextColor={colors.textLight}
+                value={advice}
+                onChangeText={(text) => {
+                  setAdvice(text);
+                  if (errors.advice && text.trim()) {
+                    const newErrors = { ...errors };
+                    delete newErrors.advice;
+                    setErrors(newErrors);
+                  }
+                }}
+                multiline
+                numberOfLines={4}
+                editable={!loading}
+              />
+              {errors.advice && (
+                <Text style={styles.errorText}>{errors.advice}</Text>
               )}
             </>
           )}

@@ -9,6 +9,9 @@ public class AlumniDetails implements Serializable {
     private String experienceLevel;
     private List<String> skills = new ArrayList<>();
     private List<String> achievements = new ArrayList<>();
+    private List<String> careerPath = new ArrayList<>();
+    private List<String> certifications = new ArrayList<>();
+    private String advice;
 
     public String getJobTitle() {
         return jobTitle;
@@ -40,5 +43,29 @@ public class AlumniDetails implements Serializable {
 
     public void setAchievements(List<String> achievements) {
         this.achievements = achievements;
+    }
+
+    public List<String> getCareerPath() {
+        return careerPath;
+    }
+
+    public void setCareerPath(List<String> careerPath) {
+        this.careerPath = careerPath;
+    }
+
+    public List<String> getCertifications() {
+        return certifications;
+    }
+
+    public void setCertifications(List<String> certifications) {
+        this.certifications = certifications;
+    }
+
+    public String getAdvice() {
+        return advice;
+    }
+
+    public void setAdvice(String advice) {
+        this.advice = advice;
     }
 }

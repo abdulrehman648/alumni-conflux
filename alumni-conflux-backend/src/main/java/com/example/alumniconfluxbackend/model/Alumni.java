@@ -42,8 +42,6 @@ public class Alumni {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    @Column(name = "profile_picture")
-    private String profilePicture;
 
     @OneToMany(mappedBy = "alumni", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Job> jobs;
@@ -120,11 +118,4 @@ public class Alumni {
         isAvailableForMentorship = availableForMentorship;
     }
 
-    public String getProfilePicture() {
-        return profilePicture;
-    }
-
-    public void setProfilePicture(String profilePicture) {
-        this.profilePicture = profilePicture;
-    }
 }

@@ -8,6 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../constants/theme";
@@ -37,11 +38,11 @@ export default function SignUp() {
 
   // Block Admin Signup
   if (role === "ADMIN") {
-    Toast.show({
-      type: "error",
-      text1: "Restricted",
-      text2: "Admins cannot sign up via this portal.",
-    });
+    Alert.alert(
+      "Restricted",
+      "Admins cannot sign up via this portal.",
+      [{ text: "Cancel", style: "cancel" }, { text: "OK" }]
+    );
     router.replace("/role");
     return null;
   }
@@ -82,11 +83,13 @@ export default function SignUp() {
             setLoading(false);
             setStep(3);
           } else {
-            setError(result.message || "Username already taken");
+            Alert.alert("Registration Error", result.message || "Username already taken", [{ text: "OK" }]);
             setLoading(false);
           }
         } catch (err: any) {
-          setError(err.response?.data?.message || "Failed to check username");
+          const errData = err.response?.data;
+          const msg = errData?.message || errData?.error || errData?.detail || errData?.details || (typeof errData === 'string' ? errData : null) || "Failed to check username";
+          Alert.alert("Registration Error", msg, [{ text: "OK" }]);
           setLoading(false);
         }
         break;
@@ -104,39 +107,21 @@ export default function SignUp() {
         try {
           const result = await authService.checkEmail(email);
           if (result.success) {
-            Toast.show({
-              type: "success",
-              text1: "Code Sent",
-              text2: `Verification code sent to ${email}`,
-              topOffset: 50,
-              props: {
-                style: {
-                  backgroundColor: colors.success,
-                  borderRadius: 12,
-                  marginHorizontal: Spacing.LG,
-                },
-                text1Style: {
-                  fontFamily: "Poppins-SemiBold",
-                  fontSize: FontSizes.Base,
-                  fontWeight: "600",
-                  color: "#FFFFFF",
-                },
-                text2Style: {
-                  fontFamily: "Poppins-Regular",
-                  fontSize: FontSizes.SM,
-                  fontWeight: "400",
-                  color: "#FFFFFF",
-                },
-              },
-            });
+            Alert.alert(
+              "Code Sent",
+              `Verification code sent to ${email}`,
+              [{ text: "Cancel", style: "cancel" }, { text: "OK" }]
+            );
             setLoading(false);
             setStep(4);
           } else {
-            setError(result.message || "Email already registered");
+            Alert.alert("Registration Error", result.message || "Email already registered", [{ text: "OK" }]);
             setLoading(false);
           }
         } catch (err: any) {
-          setError(err.response?.data?.message || "Failed to check email");
+          const errData = err.response?.data;
+          const msg = errData?.message || errData?.error || errData?.detail || errData?.details || (typeof errData === 'string' ? errData : null) || "Failed to check email";
+          Alert.alert("Registration Error", msg, [{ text: "OK" }]);
           setLoading(false);
         }
         break;
@@ -193,12 +178,11 @@ export default function SignUp() {
                 const userIdStr = userId?.toString();
 
                 if (!userIdStr) {
-                  setError("Failed to get user ID after signup");
+                  Alert.alert("Registration Error", "Failed to get user ID after signup", [{ text: "OK" }]);
                   setLoading(false);
                   return;
                 }
 
-                // Store auth data in context
                 setAuthData({
                   userId: userIdStr,
                   userRole: role || "STUDENT",
@@ -208,26 +192,29 @@ export default function SignUp() {
 
                 setLoading(false);
 
-                // Redirect directly to dashboard instead of profile completion
                 if (role === "ALUMNI") {
                   router.replace("/(alumni)");
                 } else {
                   router.replace("/(student)");
                 }
               } else {
-                setError(signupResult.message || "Failed to create account");
+                Alert.alert("Registration Error", signupResult.message || "Failed to create account", [{ text: "OK" }]);
                 setLoading(false);
               }
             } catch (signupErr: any) {
-              setError(signupErr.response?.data?.message || "Signup failed");
+              const errData = signupErr.response?.data;
+              const msg = errData?.message || errData?.error || errData?.detail || errData?.details || (typeof errData === 'string' ? errData : null) || "Signup failed";
+              Alert.alert("Registration Error", msg, [{ text: "OK" }]);
               setLoading(false);
             }
           } else {
-            setError(result.message || "Invalid or expired code");
+            Alert.alert("Verification Error", result.message || "Invalid or expired code", [{ text: "OK" }]);
             setLoading(false);
           }
         } catch (err: any) {
-          setError(err.response?.data?.message || "Failed to verify code");
+          const errData = err.response?.data;
+          const msg = errData?.message || errData?.error || errData?.detail || errData?.details || (typeof errData === 'string' ? errData : null) || "Failed to verify code";
+          Alert.alert("Verification Error", msg, [{ text: "OK" }]);
           setLoading(false);
         }
         break;
@@ -315,7 +302,7 @@ export default function SignUp() {
             <Text style={styles.label}>Email Address</Text>
             <TextInput
               style={styles.textInput}
-              placeholder="john@example.com"
+              placeholder=""
               placeholderTextColor={colors.textLight}
               value={email}
               onChangeText={setEmail}
@@ -333,7 +320,7 @@ export default function SignUp() {
                 style={[
                   styles.floatingLabel,
                   (passwordFocused || password.length > 0) &&
-                    styles.floatingLabelActive,
+                  styles.floatingLabelActive,
                 ]}
               >
                 Password
@@ -372,7 +359,7 @@ export default function SignUp() {
                 style={[
                   styles.requirementText,
                   /(?=.*[a-z])(?=.*[A-Z])/.test(password) &&
-                    styles.requirementMet,
+                  styles.requirementMet,
                 ]}
               >
                 {/(?=.*[a-z])(?=.*[A-Z])/.test(password) ? "✓" : "○"} Mix of

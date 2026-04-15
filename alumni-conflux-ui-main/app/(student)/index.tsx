@@ -6,8 +6,10 @@ import {
   Calendar,
   ChevronRight,
   MessageSquare,
+  User,
   Users,
 } from "lucide-react-native";
+import { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -17,26 +19,59 @@ import {
 } from "react-native";
 import { FontSizes, Spacing } from "../../constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import {
+  eventsService,
+  jobsService,
+  mentorshipService,
+} from "../../src/services/api";
 import colors from "../../src/theme/colors";
 
 export default function StudentHome() {
   const router = useRouter();
-  const { fullName } = useAuth();
+  const { fullName, userId } = useAuth();
+
+  const [eventCount, setEventCount] = useState<string>("-");
+  const [mentorCount, setMentorCount] = useState<string>("-");
+  const [jobCount, setJobCount] = useState<string>("-");
+
+  useEffect(() => {
+    if (userId) {
+      loadStats();
+    }
+  }, [userId]);
+
+  const loadStats = async () => {
+    try {
+      const [events, jobs, mentors] = await Promise.all([
+        eventsService.getAll(Number(userId)),
+        jobsService.getAll(),
+        mentorshipService.getAvailableMentors(),
+      ]);
+      setEventCount(events.length ? events.length.toString() : "0");
+      setJobCount(jobs.length ? jobs.length.toString() : "0");
+      setMentorCount(mentors.length ? mentors.length.toString() : "0");
+    } catch (error) {
+      console.error("Failed to load dashboard stats:", error);
+      setEventCount("0");
+      setJobCount("0");
+      setMentorCount("0");
+    }
+  };
 
   const stats = [
     {
       icon: Users,
-      number: "12",
+      number: mentorCount,
       label: "Mentors",
     },
     {
       icon: Briefcase,
-      number: "8",
+      number: jobCount,
       label: "Jobs",
     },
     {
       icon: Calendar,
-      number: "3",
+      number: eventCount,
       label: "Events",
     },
   ];
@@ -77,6 +112,12 @@ export default function StudentHome() {
       description: "View and manage your bookings",
       icon: BookOpen,
       route: "/(student)/bookings",
+    },
+    {
+      title: "Edit Profile",
+      description: "Update your personal and academic info",
+      icon: User,
+      route: "/(student)/profile",
     },
   ];
 

@@ -7,7 +7,7 @@ export { AccountDetails, Campaign, Contribution };
 const API_BASE_URL =
   Platform.OS === "web"
     ? "http://localhost:8080/api"
-    : "http://192.168.0.101:8080/api";
+    : "http://10.96.41.236:8080/api";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -51,9 +51,16 @@ export const authService = {
         message: "Account created successfully",
       };
     } catch (error: any) {
+      const errorData = error.response?.data;
       return {
         success: false,
-        message: error.response?.data?.message || "Sign up failed",
+        message:
+          errorData?.message ||
+          errorData?.error ||
+          errorData?.detail ||
+          errorData?.details ||
+          (typeof errorData === "string" ? errorData : null) ||
+          "Sign up failed",
       };
     }
   },
@@ -63,9 +70,16 @@ export const authService = {
       const response = await apiClient.post("/auth/check-email", { email });
       return { success: true, message: response.data.message };
     } catch (error: any) {
+      const errorData = error.response?.data;
       return {
         success: false,
-        message: error.response?.data?.message || "Email check failed",
+        message:
+          errorData?.message ||
+          errorData?.error ||
+          errorData?.detail ||
+          errorData?.details ||
+          (typeof errorData === "string" ? errorData : null) ||
+          "Email check failed",
       };
     }
   },
@@ -77,9 +91,21 @@ export const authService = {
       });
       return { success: true, message: response.data.message };
     } catch (error: any) {
+      const errorData = error.response?.data;
+      console.error("Username check error:", {
+        status: error.response?.status,
+        errorData,
+        fullError: error,
+      });
       return {
         success: false,
-        message: error.response?.data?.message || "Username check failed",
+        message:
+          errorData?.message ||
+          errorData?.error ||
+          errorData?.detail ||
+          errorData?.details ||
+          (typeof errorData === "string" ? errorData : null) ||
+          "Username check failed",
       };
     }
   },
@@ -89,9 +115,16 @@ export const authService = {
       const response = await apiClient.post("/auth/verify-otp", { email, otp });
       return { success: true, message: response.data.message };
     } catch (error: any) {
+      const errorData = error.response?.data;
       return {
         success: false,
-        message: error.response?.data?.message || "OTP verification failed",
+        message:
+          errorData?.message ||
+          errorData?.error ||
+          errorData?.detail ||
+          errorData?.details ||
+          (typeof errorData === "string" ? errorData : null) ||
+          "OTP verification failed",
       };
     }
   },
@@ -448,6 +481,19 @@ export const donationsService = {
   getMyContributions: async (alumniId: number): Promise<Contribution[]> => {
     const response = await apiClient.get(
       `/alumni/campaigns/my-contributions/${alumniId}`,
+    );
+    return response.data;
+  },
+};
+
+export const aiService = {
+  getCareerAdvice: async (userId: number, message: string): Promise<string> => {
+    const response = await apiClient.post(
+      `/ai/career-advice/${userId}`,
+      message,
+      {
+        headers: { "Content-Type": "text/plain" },
+      },
     );
     return response.data;
   },

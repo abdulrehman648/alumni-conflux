@@ -36,9 +36,6 @@ public class Student {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(name = "profile_picture")
-    private String profilePicture;
-
     public Integer getId() {
         return id;
     }
@@ -77,13 +74,5 @@ public class Student {
 
     public void setUser(User user) {
         this.user = user;
-    }
-
-    public String getProfilePicture() {
-        return profilePicture;
-    }
-
-    public void setProfilePicture(String profilePicture) {
-        this.profilePicture = profilePicture;
     }
 }

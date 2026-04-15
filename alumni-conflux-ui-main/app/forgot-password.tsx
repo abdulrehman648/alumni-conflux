@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { ShieldCheck } from "lucide-react-native";
 import { useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,7 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../constants/theme";
 import AuthCard from "../src/components/AuthCard";
 import AuthHeader from "../src/components/AuthHeader";
@@ -45,15 +45,21 @@ export default function ForgotPassword() {
         setLoading(true);
         try {
           await authService.forgotPassword(email.toLowerCase());
-          Toast.show({
-            type: "success",
-            text1: "Code Sent",
-            text2: `Reset code sent to ${email}`,
-            topOffset: 50,
-          });
+          Alert.alert("Code Sent", `Reset code sent to ${email}`, [
+            { text: "Cancel", style: "cancel" },
+            { text: "OK" },
+          ]);
           setStep(2);
         } catch (err: any) {
-          setError(err.response?.data?.error || "Failed to send reset code");
+          const errData = err.response?.data;
+          const msg =
+            errData?.message ||
+            errData?.error ||
+            errData?.detail ||
+            errData?.details ||
+            (typeof errData === "string" ? errData : null) ||
+            "Failed to send reset code";
+          Alert.alert("Error", msg, [{ text: "OK" }]);
         } finally {
           setLoading(false);
         }
@@ -77,14 +83,13 @@ export default function ForgotPassword() {
           const res = await authService.verifyOtp(email.toLowerCase(), code);
           if (!res.success) throw new Error(res.message);
 
-          Toast.show({
-            type: "success",
-            text1: "Code Verified",
-            topOffset: 50,
-          });
+          Alert.alert("Code Verified", "You can now create a new password.", [
+            { text: "Cancel", style: "cancel" },
+            { text: "OK" },
+          ]);
           setStep(3);
         } catch (err: any) {
-          setError(err.message || "Invalid code");
+          Alert.alert("Error", err.message || "Invalid code", [{ text: "OK" }]);
         } finally {
           setLoading(false);
         }
@@ -118,15 +123,22 @@ export default function ForgotPassword() {
             code,
             newPassword,
           );
-          Toast.show({
-            type: "success",
-            text1: "Password Reset",
-            text2: "Your password has been successfully changed",
-            topOffset: 50,
-          });
+          Alert.alert(
+            "Password Reset",
+            "Your password has been successfully changed",
+            [{ text: "Cancel", style: "cancel" }, { text: "OK" }],
+          );
           setStep(4);
         } catch (err: any) {
-          setError(err.response?.data?.error || "Failed to reset password");
+          const errData = err.response?.data;
+          const msg =
+            errData?.message ||
+            errData?.error ||
+            errData?.detail ||
+            errData?.details ||
+            (typeof errData === "string" ? errData : null) ||
+            "Failed to reset password";
+          Alert.alert("Error", msg, [{ text: "OK" }]);
         } finally {
           setLoading(false);
         }
@@ -182,7 +194,7 @@ export default function ForgotPassword() {
             <Text style={styles.label}>Email Address</Text>
             <TextInput
               style={styles.textInput}
-              placeholder="john@example.com"
+              placeholder=""
               placeholderTextColor={colors.textLight}
               value={email}
               onChangeText={setEmail}
@@ -293,11 +305,7 @@ export default function ForgotPassword() {
           <View style={styles.buttonContainer}>
             <RoundedButton
               title={
-                step === 1
-                  ? "Send Code"
-                  : step === 2
-                    ? "Verify"
-                    : "Reset Password"
+                step === 1 ? "Next" : step === 2 ? "Verify" : "Reset Password"
               }
               onPress={handleNextStep}
               variant="primary"

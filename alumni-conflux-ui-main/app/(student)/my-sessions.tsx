@@ -4,34 +4,75 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator
 } from "react-native";
-import { useBooking } from "../../src/context/BookingContext";
+import { useEffect, useState } from "react";
+import { useAuth } from "../../src/context/AuthContext";
+import { mentorshipService } from "../../src/services/api";
+import Toast from "react-native-toast-message";
+
+type SentRequest = {
+  id: number;
+  requesterId: number;
+  requesterName: string;
+  mentorId: number;
+  mentorName: string;
+  status: string;
+  message: string;
+  createdAt: string;
+};
 
 export default function MySessions() {
-  const { bookings, cancelBooking } = useBooking();
+  const { userId } = useAuth();
+  const [requests, setRequests] = useState<SentRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSentRequests();
+  }, [userId]);
+
+  const fetchSentRequests = async () => {
+    if (!userId) return;
+    try {
+      setLoading(true);
+      const data = await mentorshipService.getSentRequests(Number(userId));
+      setRequests(data);
+    } catch (error) {
+      console.error(error);
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to fetch sessions/requests' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "ACCEPTED": return "green";
+      case "REJECTED": return "red";
+      default: return "#0F4C4F";
+    }
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>My Booked Sessions</Text>
+      <Text style={styles.title}>My Mentorship Requests</Text>
 
-      {bookings.length === 0 ? (
-        <Text style={styles.empty}>No sessions booked yet.</Text>
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#0F4C4F" />
+        </View>
+      ) : requests.length === 0 ? (
+        <Text style={styles.empty}>No mentorship requests sent yet.</Text>
       ) : (
         <FlatList
-          data={bookings}
-         keyExtractor={(_, index) => index.toString()}
-          renderItem={({ item , index }) => (
+          data={requests}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
             <View style={styles.card}>
               <Text style={styles.name}>{item.mentorName}</Text>
-              <Text style={styles.details}>Date: {item.date}</Text>
-              <Text style={styles.details}>Time: {item.time}</Text>
-
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => cancelBooking(index)}
-              >
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
+              <Text style={styles.details}>Status: <Text style={{ color: getStatusColor(item.status), fontWeight: 'bold' }}>{item.status}</Text></Text>
+              <Text style={styles.details}>Message: {item.message}</Text>
+              <Text style={styles.date}>Requested on: {new Date(item.createdAt).toLocaleDateString()}</Text>
             </View>
           )}
         />
@@ -42,6 +83,7 @@ export default function MySessions() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 20 },
   empty: { fontSize: 16, textAlign: "center", marginTop: 50 },
   card: {
@@ -50,14 +92,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 15,
   },
-  name: { fontSize: 18, fontWeight: "bold" },
-  details: { fontSize: 14, marginTop: 4 },
-  cancelButton: {
-    backgroundColor: "red",
-    padding: 8,
-    borderRadius: 6,
-    marginTop: 10,
-    alignSelf: "flex-start",
-  },
-  cancelText: { color: "white" },
+  name: { fontSize: 18, fontWeight: "bold", color: '#0F4C4F', marginBottom: 5 },
+  details: { fontSize: 14, marginTop: 4, color: '#333' },
+  date: { fontSize: 12, marginTop: 8, color: '#666', fontStyle: 'italic' },
 });

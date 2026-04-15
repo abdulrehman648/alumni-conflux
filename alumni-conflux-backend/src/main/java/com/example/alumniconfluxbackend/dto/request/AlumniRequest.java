@@ -15,6 +15,9 @@ public class AlumniRequest {
     private String experienceLevel;
     private List<String> skills;
     private List<String> achievements;
+    private List<String> careerPath;
+    private List<String> certifications;
+    private String advice;
 
     public String getInstitutionName() {
         return institutionName;
@@ -102,5 +105,29 @@ public class AlumniRequest {
 
     public void setAchievements(List<String> achievements) {
         this.achievements = achievements;
+    }
+
+    public List<String> getCareerPath() {
+        return careerPath;
+    }
+
+    public void setCareerPath(List<String> careerPath) {
+        this.careerPath = careerPath;
+    }
+
+    public List<String> getCertifications() {
+        return certifications;
+    }
+
+    public void setCertifications(List<String> certifications) {
+        this.certifications = certifications;
+    }
+
+    public String getAdvice() {
+        return advice;
+    }
+
+    public void setAdvice(String advice) {
+        this.advice = advice;
     }
 }

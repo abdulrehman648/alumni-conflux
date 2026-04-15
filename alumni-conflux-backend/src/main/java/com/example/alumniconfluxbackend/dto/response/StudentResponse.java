@@ -18,7 +18,6 @@ public class StudentResponse {
 
     private List<String> skills;
     private List<String> careerPreferences;
-    private String profilePicture;
 
     public Integer getStudentId() {
         return studentId;
@@ -116,11 +115,4 @@ public class StudentResponse {
         this.careerPreferences = careerPreferences;
     }
 
-    public String getProfilePicture() {
-        return profilePicture;
-    }
-
-    public void setProfilePicture(String profilePicture) {
-        this.profilePicture = profilePicture;
-    }
 }

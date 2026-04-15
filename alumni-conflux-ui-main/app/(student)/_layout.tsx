@@ -54,9 +54,14 @@ export default function RootLayout() {
       <Stack.Screen name="my-sessions" options={{ title: "Book Sessions" }} />
       <Stack.Screen name="bookings" options={{ title: "Bookings" }} />
       <Stack.Screen
-        name="mentor-details/[id]"
         options={{
           title: "Mentor Details",
+        }}
+      />
+      <Stack.Screen
+        name="ai-career"
+        options={{
+          headerShown: false,
         }}
       />
     </Stack>

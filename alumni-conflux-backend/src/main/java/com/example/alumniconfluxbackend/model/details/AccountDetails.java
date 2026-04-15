@@ -8,7 +8,6 @@ public class AccountDetails implements Serializable {
     private String iban;
     private String bankName;
 
-    // Getters and Setters
     public String getAccountName() {
         return accountName;
     }

@@ -27,8 +27,8 @@ public class MentorshipServiceImpl implements MentorshipService {
     private final UserRepository userRepository;
 
     public MentorshipServiceImpl(AlumniRepository alumniRepository,
-                                MentorshipRequestRepository mentorshipRequestRepository,
-                                UserRepository userRepository) {
+            MentorshipRequestRepository mentorshipRequestRepository,
+            UserRepository userRepository) {
         this.alumniRepository = alumniRepository;
         this.mentorshipRequestRepository = mentorshipRequestRepository;
         this.userRepository = userRepository;
@@ -46,11 +46,11 @@ public class MentorshipServiceImpl implements MentorshipService {
     public void updateMentorshipAvailability(Integer userId, boolean isAvailable) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         if (user.getAlumni() == null) {
             throw new RuntimeException("Only alumni can be mentors");
         }
-        
+
         Alumni alumni = user.getAlumni();
         alumni.setAvailableForMentorship(isAvailable);
         alumniRepository.save(alumni);
@@ -60,7 +60,7 @@ public class MentorshipServiceImpl implements MentorshipService {
     public MentorshipRequestResponse requestMentorship(Integer userId, Integer alumniId, String message) {
         User requester = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         Alumni mentor = alumniRepository.findById(alumniId)
                 .orElseThrow(() -> new RuntimeException("Mentor not found"));
 
@@ -76,7 +76,7 @@ public class MentorshipServiceImpl implements MentorshipService {
         request.setRequester(requester);
         request.setMentor(mentor);
         request.setMessage(message);
-        
+
         mentorshipRequestRepository.save(request);
         return mapToRequestResponse(request);
     }
@@ -85,7 +85,7 @@ public class MentorshipServiceImpl implements MentorshipService {
     public List<MentorshipRequestResponse> getReceivedRequests(Integer userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         if (user.getAlumni() == null) {
             return List.of();
         }
@@ -109,7 +109,6 @@ public class MentorshipServiceImpl implements MentorshipService {
         MentorshipRequest request = mentorshipRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
-        // Only the mentor can accept/reject
         if (!request.getMentor().getUser().getId().equals(userId)) {
             throw new RuntimeException("You are not authorized to respond to this request");
         }

@@ -16,7 +16,10 @@ public class AlumniResponse {
     private String experienceLevel;
     private List<String> skills;
     private List<String> achievements;
-    private String profilePicture;
+    private List<String> careerPath;
+    private List<String> certifications;
+    private String advice;
+    private boolean isAvailableForMentorship;
 
     public Integer getId() {
         return id;
@@ -114,11 +117,36 @@ public class AlumniResponse {
         this.achievements = achievements;
     }
 
-    public String getProfilePicture() {
-        return profilePicture;
+    public List<String> getCareerPath() {
+        return careerPath;
     }
 
-    public void setProfilePicture(String profilePicture) {
-        this.profilePicture = profilePicture;
+    public void setCareerPath(List<String> careerPath) {
+        this.careerPath = careerPath;
+    }
+
+    public List<String> getCertifications() {
+        return certifications;
+    }
+
+    public void setCertifications(List<String> certifications) {
+        this.certifications = certifications;
+    }
+
+    public String getAdvice() {
+        return advice;
+    }
+
+    public void setAdvice(String advice) {
+        this.advice = advice;
+    }
+
+
+    public boolean isAvailableForMentorship() {
+        return isAvailableForMentorship;
+    }
+
+    public void setAvailableForMentorship(boolean availableForMentorship) {
+        isAvailableForMentorship = availableForMentorship;
     }
 }

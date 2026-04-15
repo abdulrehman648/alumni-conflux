@@ -18,7 +18,7 @@ export default function RoleScreen() {
     {
       id: "student",
       title: "Student",
-      description: "Find mentors & book sessions",
+      description: "Find mentors & get career guidance",
       icon: "school",
       role: "STUDENT",
       onPress: () => router.push("/login?role=STUDENT"),

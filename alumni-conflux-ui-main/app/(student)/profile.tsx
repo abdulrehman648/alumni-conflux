@@ -1,9 +1,7 @@
-import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { Camera, ChevronLeft, Plus, X } from "lucide-react-native";
+import { ChevronLeft, Plus, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -30,7 +28,6 @@ interface StudentProfile {
   currentSemester: number;
   skills: string[];
   careerPreferences: string[];
-  profilePicture: string;
 }
 
 export default function StudentProfileScreen() {
@@ -42,7 +39,6 @@ export default function StudentProfileScreen() {
   // Form states
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [avatar, setAvatar] = useState<string | null>(null);
   const [institution, setInstitution] = useState("");
   const [graduationYear, setGraduationYear] = useState("");
   const [department, setDepartment] = useState("");
@@ -54,13 +50,6 @@ export default function StudentProfileScreen() {
   const [careerPreferences, setCareerPreferences] = useState<string[]>([]);
   const [newPreference, setNewPreference] = useState("");
   const [uploading, setUploading] = useState(false);
-
-  const getFullImageUrl = (path: string | null) => {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    const baseUrl = apiClient.defaults.baseURL?.replace("/api", "") || "";
-    return `${baseUrl}${path}`;
-  };
 
   useEffect(() => {
     if (userId) {
@@ -84,9 +73,6 @@ export default function StudentProfileScreen() {
       setSemester(data.currentSemester?.toString() || "");
       setSkills(data.skills || []);
       setCareerPreferences(data.careerPreferences || []);
-      if (data.profilePicture) {
-        setAvatar(getFullImageUrl(data.profilePicture));
-      }
     } catch (error) {
       console.error("Error fetching student profile:", error);
     } finally {
@@ -94,45 +80,11 @@ export default function StudentProfileScreen() {
     }
   };
 
-  const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permission.granted) {
-      Toast.show({
-        type: "error",
-        text1: "Permission Required",
-        text2: "Allow access to media library",
-      });
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setAvatar(result.assets[0].uri);
-    }
-  };
 
   const handleSave = async () => {
     try {
       setUploading(true);
 
-      // Upload image if it's local
-      if (avatar && !avatar.startsWith("http")) {
-        const uriParts = avatar.split(".");
-        const fileType = uriParts[uriParts.length - 1];
-
-        const photo = {
-          uri: avatar,
-          name: `profile.${fileType}`,
-          type: `image/${fileType}`,
-        };
-
-        await profileService.uploadProfilePicture(userId as any, photo);
-      }
 
       const updateData = {
         fullName: name,
@@ -239,18 +191,6 @@ export default function StudentProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarContainer}>
-            {avatar ? (
-              <Image source={{ uri: avatar }} style={styles.avatarImage} />
-            ) : (
-              <Text style={styles.avatarLetter}>{name ? name.charAt(0) : "S"}</Text>
-            )}
-          </View>
-          <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
-            <Camera size={16} color={colors.white} strokeWidth={2} />
-          </TouchableOpacity>
-        </View>
 
         <View style={styles.formSection}>
           <View style={styles.fieldContainer}>
@@ -476,47 +416,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Spacing.LG,
     paddingBottom: Spacing.XXXL,
-  },
-  avatarSection: {
-    alignItems: "center",
-    marginBottom: Spacing.XXXL,
-    paddingTop: Spacing.LG,
-  },
-  avatarContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.MD,
-    borderWidth: 4,
-    borderColor: colors.background,
-  },
-  avatarImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 48,
-    backgroundColor: colors.background,
-  },
-  avatarLetter: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.XXXL,
-    fontWeight: "600",
-    color: colors.white,
-  },
-  cameraButton: {
-    position: "absolute",
-    bottom: 0,
-    right: "35%",
-    backgroundColor: colors.primary,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 3,
-    borderColor: colors.background,
   },
   formSection: {
     marginBottom: Spacing.XL,

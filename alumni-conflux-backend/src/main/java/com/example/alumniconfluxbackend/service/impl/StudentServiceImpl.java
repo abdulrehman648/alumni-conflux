@@ -101,7 +101,6 @@ public class StudentServiceImpl implements StudentService {
             res.setUsername(student.getUser().getUsername());
             res.setEmail(student.getUser().getEmail());
         }
-        res.setProfilePicture(student.getProfilePicture());
 
         return res;
     }

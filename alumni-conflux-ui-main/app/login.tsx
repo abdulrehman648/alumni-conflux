@@ -8,6 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../constants/theme";
@@ -69,19 +70,13 @@ export default function Login() {
 
         if (selectedRole && userRole !== selectedRole) {
           setLoading(false);
-          Toast.show({
-            type: "error",
-            text1: "Role Mismatch",
-            text2: `You are a ${userRole}, but trying to log in as ${selectedRole}`,
-          });
+          Alert.alert(
+            "Role Mismatch",
+            `You are a ${userRole}, but trying to log in as ${selectedRole}`,
+            [{ text: "Cancel", style: "cancel" }, { text: "OK" }]
+          );
           return;
         }
-
-        Toast.show({
-          type: "success",
-          text1: "Welcome",
-          text2: `Welcome ${response.fullName || "User"}`,
-        });
 
         setTimeout(() => {
           setLoading(false);
@@ -107,24 +102,28 @@ export default function Login() {
         }, 1000);
       } else {
         setLoading(false);
-        Toast.show({
-          type: "error",
-          text1: "Login Failed",
-          text2: "Invalid credentials",
-        });
+        Alert.alert(
+          "Login Failed",
+          "Invalid credentials",
+          [{ text: "Cancel", style: "cancel" }, { text: "OK" }]
+        );
       }
     } catch (error: any) {
       setLoading(false);
+      const errorData = error.response?.data;
       const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
+        errorData?.message ||
+        errorData?.error ||
+        errorData?.detail ||
+        errorData?.details ||
+        (typeof errorData === 'string' ? errorData : null) ||
         "An error occurred during login";
 
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: errorMessage,
-      });
+      Alert.alert(
+        "Login Failed",
+        errorMessage,
+        [{ text: "Cancel", style: "cancel" }, { text: "OK" }]
+      );
     }
   };
 
@@ -144,7 +143,7 @@ export default function Login() {
                 style={[
                   styles.floatingLabel,
                   (emailFocused || emailOrUsername.length > 0) &&
-                    styles.floatingLabelActive,
+                  styles.floatingLabelActive,
                 ]}
               >
                 Email or Username
@@ -172,7 +171,7 @@ export default function Login() {
                 style={[
                   styles.floatingLabel,
                   (passwordFocused || password.length > 0) &&
-                    styles.floatingLabelActive,
+                  styles.floatingLabelActive,
                 ]}
               >
                 Password

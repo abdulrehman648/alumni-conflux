@@ -22,7 +22,7 @@ public class AlumniServiceImpl implements AlumniService {
     private final UserRepository userRepository;
 
     public AlumniServiceImpl(AlumniRepository alumniRepository,
-            UserRepository userRepository) {
+                             UserRepository userRepository) {
         this.alumniRepository = alumniRepository;
         this.userRepository = userRepository;
     }
@@ -67,6 +67,9 @@ public class AlumniServiceImpl implements AlumniService {
         details.setExperienceLevel(request.getExperienceLevel());
         details.setSkills(request.getSkills());
         details.setAchievements(request.getAchievements());
+        details.setCareerPath(request.getCareerPath());
+        details.setCertifications(request.getCertifications());
+        details.setAdvice(request.getAdvice());
 
         alumni.setDetails(details);
 
@@ -102,13 +105,16 @@ public class AlumniServiceImpl implements AlumniService {
         res.setExperienceLevel(a.getDetails().getExperienceLevel());
         res.setSkills(a.getDetails().getSkills());
         res.setAchievements(a.getDetails().getAchievements());
+        res.setCareerPath(a.getDetails().getCareerPath());
+        res.setCertifications(a.getDetails().getCertifications());
+        res.setAdvice(a.getDetails().getAdvice());
 
         if (a.getUser() != null) {
             res.setFullName(a.getUser().getFullName());
             res.setUsername(a.getUser().getUsername());
             res.setEmail(a.getUser().getEmail());
         }
-        res.setProfilePicture(a.getProfilePicture());
+        res.setAvailableForMentorship(a.isAvailableForMentorship());
 
         return res;
     }

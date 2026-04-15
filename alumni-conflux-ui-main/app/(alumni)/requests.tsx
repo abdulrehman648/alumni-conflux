@@ -1,32 +1,64 @@
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert
+  Alert,
+  ActivityIndicator
 } from "react-native";
 import { FontSizes, Spacing } from "../../constants/theme";
+import { mentorshipService } from "../../src/services/api";
+import { useAuth } from "../../src/context/AuthContext";
+import Toast from "react-native-toast-message";
 
-type Request = {
-  id: string;
-  student: string;
-  topic: string;
+type MentorshipRequest = {
+  id: number;
+  requesterId: number;
+  requesterName: string;
+  mentorId: number;
+  mentorName: string;
+  status: string;
+  message: string;
+  createdAt: string;
 };
 
 export default function Requests() {
   const router = useRouter();
+  const { userId } = useAuth();
+  const [requests, setRequests] = useState<MentorshipRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const requests: Request[] = [
-    { id: "1", student: "Ali", topic: "React Help" },
-    { id: "2", student: "Ahmed", topic: "AI Guidance" },
-  ];
+  useEffect(() => {
+    fetchRequests();
+  }, [userId]);
 
-  const handleAction = (type: string, name: string) => {
-    Alert.alert(type, `${name} request ${type}`);
+  const fetchRequests = async () => {
+    if (!userId) return;
+    try {
+      setLoading(true);
+      const data = await mentorshipService.getReceivedRequests(Number(userId));
+      setRequests(data);
+    } catch (error) {
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to load requests' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAction = async (requestId: number, newStatus: string) => {
+    if (!userId) return;
+    try {
+      await mentorshipService.updateRequestStatus(requestId, Number(userId), newStatus);
+      Toast.show({ type: 'success', text1: 'Status Updated', text2: `Request ${newStatus.toLowerCase()}` });
+      // Refresh the list
+      fetchRequests();
+    } catch (error) {
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to update request status' });
+    }
   };
 
   return (
@@ -47,48 +79,59 @@ export default function Requests() {
         </View>
       </View>
 
-      <FlatList
-        data={requests}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }: { item: Request }) => (
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#0F4C4F" />
+        </View>
+      ) : requests.length === 0 ? (
+        <View style={styles.center}>
+          <Text style={styles.emptyText}>No mentorship requests received.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={requests}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={{ padding: 15 }}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <Text style={styles.name}>{item.requesterName}</Text>
+              <Text style={styles.topic}>Message: {item.message}</Text>
+              <Text style={styles.status}>Status: {item.status}</Text>
 
-          <View style={styles.card}>
+              {item.status === 'PENDING' && (
+                <View style={styles.actions}>
+                  <TouchableOpacity
+                    style={styles.accept}
+                    onPress={() => handleAction(item.id, 'ACCEPTED')}
+                  >
+                    <Text style={styles.btnText}>Accept</Text>
+                  </TouchableOpacity>
 
-            <Text style={styles.name}>{item.student}</Text>
-            <Text style={styles.topic}>{item.topic}</Text>
-
-            <View style={styles.actions}>
-
-              <TouchableOpacity
-                style={styles.accept}
-                onPress={() => handleAction("Accepted", item.student)}
-              >
-                <Text style={styles.btnText}>Accept</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.reject}
-                onPress={() => handleAction("Rejected", item.student)}
-              >
-                <Text style={styles.btnText}>Reject</Text>
-              </TouchableOpacity>
-
+                  <TouchableOpacity
+                    style={styles.reject}
+                    onPress={() => handleAction(item.id, 'REJECTED')}
+                  >
+                    <Text style={styles.btnText}>Reject</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
-
-          </View>
-
-        )}
-      />
-
+          )}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: "#F4EAD8"
+  },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center"
   },
   headerContainer: {
     flexDirection: "row",
@@ -141,6 +184,12 @@ const styles = StyleSheet.create({
     color: "#555"
   },
 
+  status: {
+    marginTop: 5,
+    fontWeight: "bold",
+    color: "#0F4C4F"
+  },
+
   actions: {
     flexDirection: "row",
     marginTop: 10
@@ -160,10 +209,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8
   },
-
   btnText: {
     color: "#fff",
     fontWeight: "bold"
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#555"
   }
-
 });
