@@ -80,11 +80,9 @@ export default function StudentProfileScreen() {
     }
   };
 
-
   const handleSave = async () => {
     try {
       setUploading(true);
-
 
       const updateData = {
         fullName: name,
@@ -160,7 +158,10 @@ export default function StudentProfileScreen() {
   };
 
   const addPreference = () => {
-    if (newPreference.trim() && !careerPreferences.includes(newPreference.trim())) {
+    if (
+      newPreference.trim() &&
+      !careerPreferences.includes(newPreference.trim())
+    ) {
       setCareerPreferences([...careerPreferences, newPreference.trim()]);
       setNewPreference("");
     }
@@ -177,13 +178,10 @@ export default function StudentProfileScreen() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <ChevronLeft
-            size={24}
-            color={colors.primary}
-            strokeWidth={2}
-          />
+          <ChevronLeft size={18} color={colors.textDark} strokeWidth={2.5} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
@@ -191,7 +189,6 @@ export default function StudentProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-
         <View style={styles.formSection}>
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Full Name</Text>
@@ -389,19 +386,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: Spacing.LG,
-    paddingTop: Spacing.LG,
-    paddingBottom: Spacing.XL,
-    gap: Spacing.MD,
+    paddingTop: Spacing.MD,
+    paddingBottom: Spacing.MD,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.card,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
+  },
+
+  headerSpacer: {
+    width: 36,
+    height: 36,
   },
   headerTitle: {
     fontFamily: "Poppins-SemiBold",
@@ -409,6 +407,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.textDark,
     flex: 1,
+    textAlign: "center",
   },
   contentContainer: {
     flex: 1,

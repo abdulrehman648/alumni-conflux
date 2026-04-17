@@ -2,7 +2,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../constants/theme";
 import AuthCard from "../src/components/AuthCard";
@@ -142,7 +142,8 @@ export default function AddProfile() {
         newErrors.achievements = "Please add at least one achievement";
       }
       if (!careerPath.trim()) {
-        newErrors.careerPath = "Please list your career roles (comma-separated)";
+        newErrors.careerPath =
+          "Please list your career roles (comma-separated)";
       }
       if (!advice.trim()) {
         newErrors.advice = "Please provide some career advice for students";
@@ -661,7 +662,9 @@ export default function AddProfile() {
                 <Text style={styles.errorText}>{errors.achievements}</Text>
               )}
 
-              <Text style={styles.label}>Career Journey (comma-separated roles) *</Text>
+              <Text style={styles.label}>
+                Career Journey (comma-separated roles) *
+              </Text>
               <TextInput
                 style={[
                   styles.textInput,

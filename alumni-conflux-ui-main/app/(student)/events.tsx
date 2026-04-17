@@ -1,11 +1,19 @@
 import { useRouter } from "expo-router";
-import { Calendar, ChevronLeft, Clock, MapPin, Users } from "lucide-react-native";
+import {
+  Calendar,
+  ChevronLeft,
+  Clock,
+  MapPin,
+  Search,
+  Users,
+} from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -18,9 +26,19 @@ import { useAuth } from "../../src/context/AuthContext";
 export default function EventsScreen() {
   const router = useRouter();
   const { userId } = useAuth();
+  const [search, setSearch] = useState("");
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [registeredEvents, setRegisteredEvents] = useState<number[]>([]);
+
+  const filteredEvents = events.filter((event) => {
+    const query = search.toLowerCase();
+    return (
+      event.title?.toLowerCase().includes(query) ||
+      event.location?.toLowerCase().includes(query) ||
+      event.targetAudience?.toLowerCase().includes(query)
+    );
+  });
 
   useEffect(() => {
     if (userId) {
@@ -74,14 +92,22 @@ export default function EventsScreen() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <ChevronLeft size={24} color="#F4EAD8" />
+          <ChevronLeft size={18} color={colors.textDark} strokeWidth={2.5} />
         </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Upcoming Events</Text>
-          <Text style={styles.headerSubtitle}>
-            {loading ? "Loading..." : `${events.length} events coming up`}
-          </Text>
-        </View>
+        <Text style={styles.headerTitle}>Upcoming Events</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Search size={20} color={colors.textLight} strokeWidth={1.5} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search events"
+          placeholderTextColor={colors.textLight}
+          value={search}
+          onChangeText={setSearch}
+        />
       </View>
 
       {/* Events List */}
@@ -94,15 +120,17 @@ export default function EventsScreen() {
           <View style={styles.emptyState}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
-        ) : events.length > 0 ? (
-          events.map((event) => {
+        ) : filteredEvents.length > 0 ? (
+          filteredEvents.map((event) => {
             const isRegistered = registeredEvents.includes(event.id);
             return (
               <TouchableOpacity key={event.id} style={styles.eventCard}>
                 {/* Top Section - Category & Date */}
                 <View style={styles.eventTop}>
                   <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryText}>{event.targetAudience || "ALL"}</Text>
+                    <Text style={styles.categoryText}>
+                      {event.targetAudience || "ALL"}
+                    </Text>
                   </View>
                   <View style={styles.dateSection}>
                     <Calendar
@@ -129,7 +157,10 @@ export default function EventsScreen() {
                       strokeWidth={1.5}
                     />
                     <Text style={styles.detailText}>
-                      {new Date(event.eventDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(event.eventDate).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </Text>
                   </View>
 
@@ -158,11 +189,19 @@ export default function EventsScreen() {
 
                 {/* Register Button */}
                 <TouchableOpacity
-                  style={[styles.registerButton, isRegistered && styles.registeredButton]}
+                  style={[
+                    styles.registerButton,
+                    isRegistered && styles.registeredButton,
+                  ]}
                   onPress={() => handleRegister(event.id, event.title)}
                   disabled={isRegistered}
                 >
-                  <Text style={[styles.registerText, isRegistered && styles.registeredText]}>
+                  <Text
+                    style={[
+                      styles.registerText,
+                      isRegistered && styles.registeredText,
+                    ]}
+                  >
                     {isRegistered ? "Registered" : "Register Now"}
                   </Text>
                 </TouchableOpacity>
@@ -189,39 +228,51 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    padding: Spacing.LG,
-    paddingTop: 50,
-    paddingBottom: Spacing.XL,
-    gap: Spacing.MD,
-    backgroundColor: "#0F4C4F",
+    paddingHorizontal: Spacing.MD,
+    paddingTop: Spacing.MD,
+    paddingBottom: Spacing.MD,
   },
 
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(244, 234, 216, 0.2)",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(244, 234, 216, 0.3)",
   },
 
-  headerContent: {
-    flex: 1,
+  headerSpacer: {
+    width: 36,
+    height: 36,
   },
 
   headerTitle: {
+    flex: 1,
     fontFamily: "Poppins-SemiBold",
-    fontSize: 22,
-    color: "#F4EAD8",
-    fontWeight: "700",
+    fontSize: FontSizes.LG,
+    fontWeight: "600",
+    color: colors.textDark,
+    textAlign: "center",
   },
-  headerSubtitle: {
+
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: Spacing.LG,
+    marginBottom: Spacing.LG,
+    paddingHorizontal: Spacing.MD,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    gap: Spacing.SM,
+  },
+
+  searchInput: {
+    flex: 1,
+    paddingVertical: Spacing.SM,
     fontFamily: "Poppins-Regular",
-    fontSize: 13,
-    color: "rgba(244, 234, 216, 0.8)",
-    marginTop: 4,
+    fontSize: FontSizes.Base,
+    fontWeight: "400",
+    color: colors.textDark,
   },
 
   listContainer: {

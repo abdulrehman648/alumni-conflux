@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface MentorshipService {
     List<MentorshipResponse> getAvailableMentors();
+    List<MentorshipResponse> getRecommendedMentors(Integer userId);
     void updateMentorshipAvailability(Integer userId, boolean isAvailable);
     MentorshipRequestResponse requestMentorship(Integer userId, Integer alumniId, String message);
     List<MentorshipRequestResponse> getReceivedRequests(Integer userId);

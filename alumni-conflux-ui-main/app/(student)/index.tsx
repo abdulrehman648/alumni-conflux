@@ -29,10 +29,10 @@ import colors from "../../src/theme/colors";
 export default function StudentHome() {
   const router = useRouter();
   const { fullName, userId } = useAuth();
-
   const [eventCount, setEventCount] = useState<string>("-");
   const [mentorCount, setMentorCount] = useState<string>("-");
   const [jobCount, setJobCount] = useState<string>("-");
+  const [statsLoadFailed, setStatsLoadFailed] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -42,6 +42,11 @@ export default function StudentHome() {
 
   const loadStats = async () => {
     try {
+      setStatsLoadFailed(false);
+      setEventCount("-");
+      setJobCount("-");
+      setMentorCount("-");
+
       const [events, jobs, mentors] = await Promise.all([
         eventsService.getAll(Number(userId)),
         jobsService.getAll(),
@@ -52,9 +57,7 @@ export default function StudentHome() {
       setMentorCount(mentors.length ? mentors.length.toString() : "0");
     } catch (error) {
       console.error("Failed to load dashboard stats:", error);
-      setEventCount("0");
-      setJobCount("0");
-      setMentorCount("0");
+      setStatsLoadFailed(true);
     }
   };
 
@@ -79,19 +82,19 @@ export default function StudentHome() {
   const quickActions = [
     {
       title: "Find a Mentor",
-      description: "Connect with alumni professionals for guidance",
+      description: "Take the matching tests to unlock mentor suggestions",
       icon: Users,
       route: "/(student)/mentors",
     },
     {
       title: "Explore Jobs",
-      description: "Discover recommended job opportunities",
+      description: "Discover job and internship",
       icon: Briefcase,
       route: "/(student)/jobs",
     },
     {
       title: "Upcoming Events",
-      description: "Register for networking and alumni meetups",
+      description: "Explore and register for events",
       icon: Calendar,
       route: "/(student)/events",
     },
@@ -115,21 +118,31 @@ export default function StudentHome() {
     },
     {
       title: "Edit Profile",
-      description: "Update your personal and academic info",
+      description: "View and update your profile info",
       icon: User,
       route: "/(student)/profile",
     },
   ];
 
   return (
-    <>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+      <View style={styles.headerContainer}>
+        <View style={styles.headerProfileRow}>
+          <View style={styles.headerProfileIconWrap}>
+            <User size={20} color={colors.textDark} strokeWidth={2.2} />
+          </View>
+          <Text style={styles.headerTitle}>{fullName}</Text>
+        </View>
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Welcome Section */}
         <View style={styles.welcomeSection}>
-          <View style={styles.welcomeContent}>
-            <Text style={styles.welcomeText}>Welcome Back</Text>
-            <Text style={styles.name}>{fullName || "Student"}</Text>
-          </View>
+          <View style={styles.welcomeContent}></View>
         </View>
 
         {/* Stats Section */}
@@ -147,6 +160,11 @@ export default function StudentHome() {
             );
           })}
         </View>
+        {statsLoadFailed && (
+          <Text style={styles.statsErrorText}>
+            Unable to load dashboard stats right now.
+          </Text>
+        )}
 
         {/* Quick Actions */}
         <View style={styles.sectionHeader}>
@@ -165,7 +183,7 @@ export default function StudentHome() {
               >
                 <View style={styles.actionLeft}>
                   <View style={styles.actionIconContainer}>
-                    <Icon size={20} color={colors.primary} strokeWidth={1.5} />
+                    <Icon size={20} color={colors.white} strokeWidth={1.5} />
                   </View>
                   <View style={styles.actionTextContainer}>
                     <Text style={styles.actionTitle}>{action.title}</Text>
@@ -182,7 +200,7 @@ export default function StudentHome() {
           })}
         </View>
       </ScrollView>
-    </>
+    </View>
   );
 }
 
@@ -190,8 +208,47 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+
+  scrollView: {
+    flex: 1,
+  },
+
+  scrollContent: {
     paddingHorizontal: Spacing.LG,
-    paddingTop: Spacing.LG,
+    paddingBottom: Spacing.XXXL,
+  },
+
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.LG,
+    paddingTop: Spacing.MD,
+    paddingBottom: Spacing.MD,
+    backgroundColor: colors.background,
+  },
+
+  headerProfileRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.SM,
+  },
+
+  headerProfileIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  headerTitle: {
+    flex: 1,
+    fontFamily: "Poppins-SemiBold",
+    fontSize: FontSizes.XL,
+    fontWeight: "600",
+    color: colors.textDark,
+    textAlign: "left",
   },
 
   welcomeSection: {
@@ -219,7 +276,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: Spacing.XXXL,
+    marginBottom: Spacing.XL,
     gap: Spacing.MD,
   },
 
@@ -229,8 +286,7 @@ const styles = StyleSheet.create({
     padding: Spacing.MD,
     borderRadius: 16,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
+    shadowColor: "#000",
   },
 
   statIconContainer: {
@@ -252,15 +308,25 @@ const styles = StyleSheet.create({
     marginTop: Spacing.XS,
   },
 
+  statsErrorText: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.XS,
+    fontWeight: "400",
+    color: colors.danger,
+    marginTop: -Spacing.XL,
+    marginBottom: Spacing.XXL,
+    textAlign: "center",
+  },
+
   sectionHeader: {
     marginBottom: Spacing.MD,
   },
 
   sectionTitle: {
     fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.Base,
+    fontSize: FontSizes.LG,
     fontWeight: "600",
-    color: colors.primary,
+    color: colors.textDark,
   },
 
   actionsContainer: {
@@ -275,8 +341,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: colors.border,
   },
 
   actionLeft: {
@@ -289,8 +353,7 @@ const styles = StyleSheet.create({
   actionIconContainer: {
     width: 48,
     height: 48,
-    borderRadius: 12,
-    backgroundColor: colors.background,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -311,6 +374,5 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.XS,
     fontWeight: "400",
     color: colors.textLight,
-    marginTop: Spacing.XS,
   },
 });

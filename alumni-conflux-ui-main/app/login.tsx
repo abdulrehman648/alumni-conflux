@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { EyeOff } from "lucide-react-native";
+import { Eye, EyeOff } from "lucide-react-native";
 import { useState } from "react";
 import {
   ScrollView,
@@ -10,7 +10,6 @@ import {
   View,
   Alert,
 } from "react-native";
-import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../constants/theme";
 import AuthCard from "../src/components/AuthCard";
 import AuthHeader from "../src/components/AuthHeader";
@@ -34,6 +33,12 @@ export default function Login() {
     emailOrUsername?: string;
     password?: string;
   }>({});
+
+  const normalizeRole = (role?: string | null) =>
+    (role || "")
+      .toUpperCase()
+      .replace(/^ROLE_/, "")
+      .trim();
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -66,64 +71,87 @@ export default function Login() {
       );
 
       if (response && response.role) {
-        const userRole = response.role?.toUpperCase();
+        const userRole = normalizeRole(response.role);
+        const expectedRole = normalizeRole(selectedRole);
 
-        if (selectedRole && userRole !== selectedRole) {
-          setLoading(false);
+        if (expectedRole && userRole !== expectedRole) {
           Alert.alert(
             "Role Mismatch",
-            `You are a ${userRole}, but trying to log in as ${selectedRole}`,
-            [{ text: "Cancel", style: "cancel" }, { text: "OK" }]
+            `You are a ${userRole}, but trying to log in as ${expectedRole}`,
+            [{ text: "Cancel", style: "cancel" }, { text: "OK" }],
           );
           return;
         }
 
-        setTimeout(() => {
-          setLoading(false);
+        const userIdValue = response.userId ?? response.id;
+        if (userIdValue === undefined || userIdValue === null) {
+          Alert.alert(
+            "Login Failed",
+            "Unable to read user data from server response",
+            [{ text: "Cancel", style: "cancel" }, { text: "OK" }],
+          );
+          return;
+        }
 
-          const userRole = response.role?.toUpperCase();
-          const userId = (response.userId || response.id).toString();
-          const profileComplete = response.profileComplete !== false;
+        const userId = userIdValue.toString();
+        const profileComplete = response.profileComplete !== false;
+        const authToken =
+          response.token || response.accessToken || response.access_token;
 
-          setAuthData({
-            userId,
-            userRole,
-            fullName: response.fullName,
-            profileComplete,
-          });
+        setAuthData({
+          userId,
+          userRole,
+          fullName: response.fullName,
+          profileComplete,
+          authToken,
+        });
 
-          if (userRole === "ADMIN") {
-            router.replace("/(admin)");
-          } else if (userRole === "ALUMNI") {
-            router.replace("/(alumni)");
-          } else {
-            router.replace("/(student)");
-          }
-        }, 1000);
+        if (userRole === "ADMIN") {
+          router.replace("/(admin)");
+        } else if (userRole === "ALUMNI") {
+          router.replace("/(alumni)");
+        } else {
+          router.replace("/(student)");
+        }
       } else {
-        setLoading(false);
-        Alert.alert(
-          "Login Failed",
-          "Invalid credentials",
-          [{ text: "Cancel", style: "cancel" }, { text: "OK" }]
-        );
+        Alert.alert("Login Failed", "Invalid credentials", [
+          { text: "Cancel", style: "cancel" },
+          { text: "OK" },
+        ]);
       }
     } catch (error: any) {
-      setLoading(false);
       const errorData = error.response?.data;
-      const errorMessage =
+      const isTimeout =
+        error?.code === "ECONNABORTED" ||
+        (typeof error?.message === "string" &&
+          error.message.toLowerCase().includes("timeout"));
+      const isNetworkError =
+        !error?.response &&
+        typeof error?.message === "string" &&
+        error.message.toLowerCase().includes("network error");
+      const rawErrorMessage =
+        (isNetworkError
+          ? "Unable to connect to server. Check that backend is running and API URL is correct."
+          : null) ||
+        (isTimeout ? "Request timed out. Please try again." : null) ||
         errorData?.message ||
         errorData?.error ||
         errorData?.detail ||
         errorData?.details ||
-        (typeof errorData === 'string' ? errorData : null) ||
+        (typeof errorData === "string" ? errorData : null) ||
+        error?.message ||
         "An error occurred during login";
 
-      Alert.alert(
-        "Login Failed",
-        errorMessage,
-        [{ text: "Cancel", style: "cancel" }, { text: "OK" }]
-      );
+      const errorMessage = String(rawErrorMessage)
+        .replace(/occured/gi, "occurred")
+        .replace(/while\s+login/gi, "while logging in");
+
+      Alert.alert("Login Failed", errorMessage, [
+        { text: "Cancel", style: "cancel" },
+        { text: "OK" },
+      ]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -143,7 +171,7 @@ export default function Login() {
                 style={[
                   styles.floatingLabel,
                   (emailFocused || emailOrUsername.length > 0) &&
-                  styles.floatingLabelActive,
+                    styles.floatingLabelActive,
                 ]}
               >
                 Email or Username
@@ -171,7 +199,7 @@ export default function Login() {
                 style={[
                   styles.floatingLabel,
                   (passwordFocused || password.length > 0) &&
-                  styles.floatingLabelActive,
+                    styles.floatingLabelActive,
                 ]}
               >
                 Password
@@ -197,7 +225,11 @@ export default function Login() {
                     onPress={() => setShowPassword(!showPassword)}
                     activeOpacity={0.7}
                   >
-                    <EyeOff size={20} color={colors.textLight} />
+                    {showPassword ? (
+                      <EyeOff size={20} color={colors.textLight} />
+                    ) : (
+                      <Eye size={20} color={colors.textLight} />
+                    )}
                   </TouchableOpacity>
                 )}
               </View>

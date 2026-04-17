@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState, useRef, useEffect } from "react";
+import { ChevronLeft } from "lucide-react-native";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
@@ -39,9 +39,11 @@ export default function AICareerCounselor() {
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    // Scroll to bottom when messages change
     if (flatListRef.current) {
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(
+        () => flatListRef.current?.scrollToEnd({ animated: true }),
+        100,
+      );
     }
   }, [messages]);
 
@@ -60,15 +62,19 @@ export default function AICareerCounselor() {
 
     try {
       if (!userId) {
-          throw new Error("User not authenticated.");
+        throw new Error("User not authenticated.");
       }
 
       // We call the career advice endpoint
-      const response = await aiService.getCareerAdvice(Number(userId), userMessage.text);
+      const response = await aiService.getCareerAdvice(
+        Number(userId),
+        userMessage.text,
+      );
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: response || "I'm sorry, I couldn't generate a response at this time.",
+        text:
+          response || "I'm sorry, I couldn't generate a response at this time.",
         sender: "ai",
       };
 
@@ -76,7 +82,11 @@ export default function AICareerCounselor() {
     } catch (error: any) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "Error: " + (error.response?.data?.message || error.message || "Failed to reach the AI counselor."),
+        text:
+          "Error: " +
+          (error.response?.data?.message ||
+            error.message ||
+            "Failed to reach the AI counselor."),
         sender: "ai",
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -93,40 +103,42 @@ export default function AICareerCounselor() {
       ]}
     >
       <View style={styles.bubbleHeader}>
-        <Ionicons 
-            name={item.sender === "user" ? "person-circle" : "sparkles"} 
-            size={18} 
-            color={item.sender === "user" ? colors.primary : colors.secondary} 
+        <Ionicons
+          name={item.sender === "user" ? "person-circle" : "sparkles"}
+          size={18}
+          color={item.sender === "user" ? colors.primary : colors.secondary}
         />
         <Text style={styles.senderName}>
-            {item.sender === "user" ? "You" : "AI Counselor"}
+          {item.sender === "user" ? "You" : "AI Counselor"}
         </Text>
       </View>
-      <Text style={[
-        styles.messageText,
-        item.sender === "user" ? styles.userText : styles.aiText
-      ]}>
+      <Text
+        style={[
+          styles.messageText,
+          item.sender === "user" ? styles.userText : styles.aiText,
+        ]}
+      >
         {item.text}
       </Text>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                 <Ionicons name="arrow-back" size={24} color={colors.white} />
-            </TouchableOpacity>
-            <View>
-                <Text style={styles.headerTitle}>AI Career Counselor</Text>
-                <Text style={styles.headerSubtitle}>Personalized Career Guidance</Text>
-            </View>
-            <Ionicons name="bulb-outline" size={24} color={colors.white} style={{ marginLeft: 'auto' }} />
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <ChevronLeft size={18} color={colors.textDark} strokeWidth={2.5} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>AI Career Counselor</Text>
+          <View style={styles.headerSpacer} />
         </View>
 
         <FlatList
@@ -156,7 +168,10 @@ export default function AICareerCounselor() {
             editable={!loading}
           />
           <TouchableOpacity
-            style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+            style={[
+              styles.sendButton,
+              !inputText.trim() && styles.sendButtonDisabled,
+            ]}
             onPress={handleSend}
             disabled={!inputText.trim() || loading}
           >
@@ -164,41 +179,42 @@ export default function AICareerCounselor() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.card,
   },
   header: {
-    backgroundColor: colors.primary,
-    padding: Spacing.LG,
+    backgroundColor: colors.card,
+    paddingHorizontal: Spacing.MD,
+    paddingTop: Spacing.MD,
+    paddingBottom: Spacing.MD,
     flexDirection: "row",
     alignItems: "center",
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   backButton: {
-    marginRight: Spacing.MD,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  headerSpacer: {
+    width: 36,
+    height: 36,
   },
   headerTitle: {
-    fontFamily: "Poppins-Bold",
+    flex: 1,
+    fontFamily: "Poppins-SemiBold",
     fontSize: FontSizes.LG,
-    color: colors.white,
-    fontWeight: "700",
-  },
-  headerSubtitle: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.XS,
-    color: "rgba(255,255,255,0.8)",
+    color: colors.textDark,
+    fontWeight: "600",
+    textAlign: "center",
   },
   chatContainer: {
     padding: Spacing.MD,
@@ -226,8 +242,6 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     backgroundColor: "#FFFFFF",
     borderBottomLeftRadius: 4,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.secondary,
   },
   bubbleHeader: {
     flexDirection: "row",

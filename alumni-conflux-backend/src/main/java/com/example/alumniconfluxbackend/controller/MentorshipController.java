@@ -24,6 +24,11 @@ public class MentorshipController {
         return ResponseEntity.ok(mentorshipService.getAvailableMentors());
     }
 
+    @GetMapping("/recommendations/{userId}")
+    public ResponseEntity<List<MentorshipResponse>> getRecommendedMentors(@PathVariable Integer userId) {
+        return ResponseEntity.ok(mentorshipService.getRecommendedMentors(userId));
+    }
+
     @PutMapping("/availability/{userId}")
     public ResponseEntity<Void> updateAvailability(@PathVariable Integer userId, @RequestParam boolean isAvailable) {
         mentorshipService.updateMentorshipAvailability(userId, isAvailable);

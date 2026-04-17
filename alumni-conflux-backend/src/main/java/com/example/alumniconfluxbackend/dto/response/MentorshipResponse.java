@@ -8,6 +8,8 @@ public class MentorshipResponse {
     private String industry;
     private String currentCompany;
     private boolean available;
+    private Integer matchScore;
+    private java.util.List<String> matchReasons;
 
     public Integer getId() {
         return id;
@@ -63,5 +65,21 @@ public class MentorshipResponse {
 
     public void setAvailable(boolean available) {
         this.available = available;
+    }
+
+    public Integer getMatchScore() {
+        return matchScore;
+    }
+
+    public void setMatchScore(Integer matchScore) {
+        this.matchScore = matchScore;
+    }
+
+    public java.util.List<String> getMatchReasons() {
+        return matchReasons;
+    }
+
+    public void setMatchReasons(java.util.List<String> matchReasons) {
+        this.matchReasons = matchReasons;
     }
 }

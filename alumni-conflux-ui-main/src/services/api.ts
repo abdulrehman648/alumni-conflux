@@ -7,11 +7,37 @@ export { AccountDetails, Campaign, Contribution };
 const API_BASE_URL =
   Platform.OS === "web"
     ? "http://localhost:8080/api"
-    : "http://10.96.41.236:8080/api";
+    : "http://192.168.100.51:8080/api";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 10000,
 });
+
+// Store token globally - will be set by AuthContext
+let authToken: string | null = null;
+
+export const setAuthToken = (token: string | null) => {
+  authToken = token;
+  if (token) {
+    apiClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  } else {
+    delete apiClient.defaults.headers.common["Authorization"];
+  }
+};
+
+// Add interceptor to include auth token in all requests
+apiClient.interceptors.request.use(
+  (config) => {
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
 
 export interface UserResponse {
   userId: number;
@@ -22,6 +48,9 @@ export interface UserResponse {
   role: string;
   profilePicture?: string;
   profileComplete?: boolean;
+  token?: string;
+  accessToken?: string;
+  access_token?: string;
 }
 
 export interface ApiResponse<T> {
@@ -352,10 +381,40 @@ export const adminService = {
   },
 };
 
+export type AssessmentType = "APTITUDE" | "INTELLIGENCE" | "PERSONALITY";
+
+export interface AssessmentQuestionResponse {
+  id: number;
+  assessmentType: AssessmentType;
+  questionText: string;
+  options: string[];
+  correctOptionIndex?: number | null;
+  displayOrder: number;
+  active: boolean;
+}
+
+export const assessmentService = {
+  getQuestionsByType: async (
+    assessmentType: AssessmentType,
+  ): Promise<AssessmentQuestionResponse[]> => {
+    const response = await apiClient.get(
+      `/assessment/questions/${assessmentType}`,
+    );
+    return response.data;
+  },
+};
+
 // Mentorship Service
 export const mentorshipService = {
   getAvailableMentors: async (): Promise<any[]> => {
     const response = await apiClient.get("/mentorship/mentors");
+    return response.data;
+  },
+
+  getRecommendedMentors: async (userId: number): Promise<any[]> => {
+    const response = await apiClient.get(
+      `/mentorship/recommendations/${userId}`,
+    );
     return response.data;
   },
 

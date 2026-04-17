@@ -2,9 +2,11 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { AuthProvider } from "../src/context/AuthContext";
 import { BookingProvider } from "../src/context/BookingContext";
+import colors from "../src/theme/colors";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,17 +29,22 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <BookingProvider>
-        <>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}
-          />
+    <SafeAreaProvider>
+      <AuthProvider>
+        <BookingProvider>
+          <SafeAreaView
+            style={{ flex: 1, backgroundColor: colors.background }}
+            edges={["top", "left", "right"]}
+          >
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}
+            />
+          </SafeAreaView>
           <Toast />
-        </>
-      </BookingProvider>
-    </AuthProvider>
+        </BookingProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

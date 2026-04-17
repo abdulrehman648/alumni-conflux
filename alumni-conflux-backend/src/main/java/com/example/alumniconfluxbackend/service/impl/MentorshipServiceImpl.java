@@ -4,16 +4,25 @@ import com.example.alumniconfluxbackend.dto.response.MentorshipRequestResponse;
 import com.example.alumniconfluxbackend.dto.response.MentorshipResponse;
 import com.example.alumniconfluxbackend.model.Alumni;
 import com.example.alumniconfluxbackend.model.MentorshipRequest;
+import com.example.alumniconfluxbackend.model.Student;
 import com.example.alumniconfluxbackend.model.User;
 import com.example.alumniconfluxbackend.repository.AlumniRepository;
 import com.example.alumniconfluxbackend.repository.MentorshipRequestRepository;
+import com.example.alumniconfluxbackend.repository.StudentRepository;
 import com.example.alumniconfluxbackend.repository.UserRepository;
 import com.example.alumniconfluxbackend.service.MentorshipService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,13 +33,16 @@ public class MentorshipServiceImpl implements MentorshipService {
 
     private final AlumniRepository alumniRepository;
     private final MentorshipRequestRepository mentorshipRequestRepository;
+    private final StudentRepository studentRepository;
     private final UserRepository userRepository;
 
     public MentorshipServiceImpl(AlumniRepository alumniRepository,
             MentorshipRequestRepository mentorshipRequestRepository,
+            StudentRepository studentRepository,
             UserRepository userRepository) {
         this.alumniRepository = alumniRepository;
         this.mentorshipRequestRepository = mentorshipRequestRepository;
+        this.studentRepository = studentRepository;
         this.userRepository = userRepository;
     }
 
@@ -41,6 +53,20 @@ public class MentorshipServiceImpl implements MentorshipService {
                 .map(this::mapToMentorshipResponse)
                 .collect(Collectors.toList());
     }
+
+        @Override
+        public List<MentorshipResponse> getRecommendedMentors(Integer userId) {
+        Student student = studentRepository.findByUserId(userId)
+            .orElseThrow(() -> new RuntimeException("Student profile not found. Please complete your profile first."));
+
+        return alumniRepository.findByIsAvailableForMentorshipTrue()
+            .stream()
+            .map(alumni -> buildRecommendation(student, alumni))
+            .sorted(Comparator.comparingInt((MentorshipResponse mentor) -> mentor.getMatchScore() != null ? mentor.getMatchScore() : 0)
+                .reversed()
+                .thenComparing(MentorshipResponse::getName, String.CASE_INSENSITIVE_ORDER))
+            .collect(Collectors.toList());
+        }
 
     @Override
     public void updateMentorshipAvailability(Integer userId, boolean isAvailable) {
@@ -120,6 +146,7 @@ public class MentorshipServiceImpl implements MentorshipService {
 
     private MentorshipResponse mapToMentorshipResponse(Alumni alumni) {
         MentorshipResponse res = new MentorshipResponse();
+        res.setId(alumni.getId());
         res.setAlumniId(alumni.getId());
         res.setUserId(alumni.getUser().getId());
         res.setName(alumni.getUser().getFullName());
@@ -127,6 +154,101 @@ public class MentorshipServiceImpl implements MentorshipService {
         res.setCurrentCompany(alumni.getCurrentCompany());
         res.setAvailable(alumni.isAvailableForMentorship());
         return res;
+    }
+
+    private MentorshipResponse buildRecommendation(Student student, Alumni alumni) {
+        MentorshipResponse response = mapToMentorshipResponse(alumni);
+        RecommendationScore recommendationScore = scoreMatch(student, alumni);
+        response.setMatchScore(recommendationScore.score);
+        response.setMatchReasons(recommendationScore.reasons);
+        return response;
+    }
+
+    private RecommendationScore scoreMatch(Student student, Alumni alumni) {
+        List<String> studentSkills = normalize(student.getDetails() != null ? student.getDetails().getSkills() : Collections.emptyList());
+        List<String> studentPreferences = normalize(student.getDetails() != null ? student.getDetails().getCareerPreferences() : Collections.emptyList());
+        List<String> mentorSkills = normalize(alumni.getDetails() != null ? alumni.getDetails().getSkills() : Collections.emptyList());
+        List<String> mentorCareerPath = normalize(alumni.getDetails() != null ? alumni.getDetails().getCareerPath() : Collections.emptyList());
+
+        Set<String> sharedSkills = intersection(studentSkills, mentorSkills);
+        Set<String> sharedCareerSignals = new LinkedHashSet<>();
+
+        for (String preference : studentPreferences) {
+            if (mentorCareerPath.contains(preference)
+                    || matchesText(preference, alumni.getIndustry())
+                    || matchesText(preference, alumni.getCurrentCompany())) {
+                sharedCareerSignals.add(preference);
+            }
+        }
+
+        int score = 10;
+        List<String> reasons = new ArrayList<>();
+
+        if (!sharedSkills.isEmpty()) {
+            score += Math.min(60, sharedSkills.size() * 15);
+            reasons.add("Shared skills: " + String.join(", ", sharedSkills));
+        }
+
+        if (!sharedCareerSignals.isEmpty()) {
+            score += Math.min(25, sharedCareerSignals.size() * 12);
+            reasons.add("Career alignment: " + String.join(", ", sharedCareerSignals));
+        }
+
+        if (matchesText(student.getInstitutionName(), alumni.getInstitutionName())) {
+            score += 5;
+            reasons.add("Same institution background");
+        }
+
+        if (matchesText(student.getDetails() != null ? student.getDetails().getDepartment() : null, alumni.getIndustry())) {
+            score += 5;
+            reasons.add("Aligned field of study and industry");
+        }
+
+        score = Math.min(score, 100);
+
+        if (reasons.isEmpty()) {
+            reasons.add("Strong available mentor option");
+        }
+
+        return new RecommendationScore(score, reasons);
+    }
+
+    private List<String> normalize(List<String> values) {
+        if (values == null) {
+            return List.of();
+        }
+
+        return values.stream()
+                .filter(value -> value != null && !value.trim().isEmpty())
+                .map(value -> value.trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toList());
+    }
+
+    private Set<String> intersection(List<String> left, List<String> right) {
+        Set<String> shared = new LinkedHashSet<>(left);
+        shared.retainAll(new HashSet<>(right));
+        return shared;
+    }
+
+    private boolean matchesText(String left, String right) {
+        if (left == null || right == null) {
+            return false;
+        }
+
+        String normalizedLeft = left.trim().toLowerCase(Locale.ROOT);
+        String normalizedRight = right.trim().toLowerCase(Locale.ROOT);
+        return !normalizedLeft.isEmpty() && !normalizedRight.isEmpty()
+                && (normalizedLeft.contains(normalizedRight) || normalizedRight.contains(normalizedLeft));
+    }
+
+    private static class RecommendationScore {
+        private final int score;
+        private final List<String> reasons;
+
+        private RecommendationScore(int score, List<String> reasons) {
+            this.score = score;
+            this.reasons = reasons;
+        }
     }
 
     private MentorshipRequestResponse mapToRequestResponse(MentorshipRequest request) {

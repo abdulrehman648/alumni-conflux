@@ -143,14 +143,10 @@ export default function JobsScreen() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
+          <ChevronLeft size={18} color={colors.textDark} strokeWidth={2.5} />
         </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Job Opportunities</Text>
-          <Text style={styles.headerSubtitle}>
-            {loading ? "Loading..." : `${filteredJobs.length} jobs available`}
-          </Text>
-        </View>
+        <Text style={styles.headerTitle}>Jobs</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       {/* Search Bar */}
@@ -158,7 +154,7 @@ export default function JobsScreen() {
         <Search size={20} color={colors.textLight} strokeWidth={1.5} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search jobs or companies"
+          placeholder="Search jobs"
           placeholderTextColor={colors.textLight}
           value={search}
           onChangeText={setSearch}
@@ -185,7 +181,7 @@ export default function JobsScreen() {
                 <View style={styles.jobHeader}>
                   <View style={styles.jobIconContainer}>
                     <Briefcase
-                      size={20}
+                      size={24}
                       color={colors.primary}
                       strokeWidth={1.5}
                     />
@@ -208,7 +204,7 @@ export default function JobsScreen() {
                   <View style={styles.detailItem}>
                     <MapPin
                       size={14}
-                      color={colors.primary}
+                      color={colors.textDark}
                       strokeWidth={1.5}
                     />
                     <Text style={styles.detailText}>{job.location}</Text>
@@ -221,7 +217,7 @@ export default function JobsScreen() {
                 {/* Salary and Button */}
                 <View style={styles.jobFooter}>
                   <View>
-                    <Text style={styles.salaryLabel}>Expected Salary</Text>
+                    <Text style={styles.salaryLabel}>Salary</Text>
                     <Text style={styles.salary}>
                       {job.salary || "Not Specified"}
                     </Text>
@@ -280,13 +276,13 @@ export default function JobsScreen() {
                     <View style={styles.jobIconContainer}>
                       <Briefcase
                         size={24}
-                        color={colors.primary}
+                        color={colors.textDark}
                         strokeWidth={1.5}
                       />
                     </View>
                     <View style={styles.titleContent}>
                       <Text style={styles.detailJobTitle}>
-                        {selectedJob.title}
+                        {selectedJob.title || "Untitled Role"}
                       </Text>
                       <View style={styles.companyRow}>
                         <Building2
@@ -295,56 +291,109 @@ export default function JobsScreen() {
                           strokeWidth={1.5}
                         />
                         <Text style={styles.detailCompany}>
-                          {selectedJob.company}
+                          {selectedJob.company || "Unknown Company"}
                         </Text>
                       </View>
                     </View>
                   </View>
 
-                  {/* Location and Type */}
+                  <View style={styles.detailChipsRow}>
+                    <View style={styles.detailChip}>
+                      <MapPin
+                        size={12}
+                        color={colors.textLight}
+                        strokeWidth={1.8}
+                      />
+                      <Text style={styles.detailChipText}>
+                        {selectedJob.location || "Location N/A"}
+                      </Text>
+                    </View>
+                    <View style={styles.detailChip}>
+                      <Text style={styles.detailChipText}>
+                        {selectedJob.jobType || selectedJob.type || "Type N/A"}
+                      </Text>
+                    </View>
+                    <View style={styles.detailChip}>
+                      <Text style={styles.detailChipText}>
+                        {selectedJob.experience ||
+                          selectedJob.experienceLevel ||
+                          "Exp N/A"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Key Details */}
                   <View style={styles.infoGrid}>
                     <View style={styles.infoCard}>
-                      <MapPin
-                        size={16}
-                        color={colors.primary}
-                        strokeWidth={1.5}
-                      />
                       <View style={styles.infoContent}>
                         <Text style={styles.infoLabel}>Location</Text>
                         <Text style={styles.infoValue}>
-                          {selectedJob.location}
+                          {selectedJob.location || "Not specified"}
                         </Text>
                       </View>
                     </View>
                     <View style={styles.infoCard}>
-                      <Briefcase
-                        size={16}
-                        color={colors.primary}
-                        strokeWidth={1.5}
-                      />
                       <View style={styles.infoContent}>
                         <Text style={styles.infoLabel}>Job Type</Text>
                         <Text style={styles.infoValue}>
-                          {selectedJob.jobType || selectedJob.type}
+                          {selectedJob.jobType ||
+                            selectedJob.type ||
+                            "Not specified"}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.infoCard}>
+                      <View style={styles.infoContent}>
+                        <Text style={styles.infoLabel}>Experience</Text>
+                        <Text style={styles.infoValue}>
+                          {selectedJob.experience ||
+                            selectedJob.experienceLevel ||
+                            "Not specified"}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.infoCard}>
+                      <View style={styles.infoContent}>
+                        <Text style={styles.infoLabel}>Salary</Text>
+                        <Text style={styles.infoValue}>
+                          {selectedJob.salary || "Not specified"}
                         </Text>
                       </View>
                     </View>
                   </View>
 
-                  {/* Salary Section */}
-                  <View style={styles.salarySection}>
-                    <Text style={styles.sectionLabel}>Expected Salary</Text>
-                    <Text style={styles.salaryAmount}>
-                      {selectedJob.salary || "Not Specified"}
+                  {/* About Company */}
+                  <View style={styles.sectionCard}>
+                    <Text style={styles.sectionLabel}>About Company</Text>
+                    <Text style={styles.descriptionText}>
+                      {selectedJob.companyDescription ||
+                        selectedJob.aboutCompany ||
+                        "No company description provided"}
                     </Text>
                   </View>
 
-                  {/* Description Section */}
-                  <View style={styles.descriptionSection}>
-                    <Text style={styles.sectionLabel}>Description</Text>
-                    <Text style={styles.descriptionText}>
-                      {selectedJob.description || "No description provided"}
-                    </Text>
+                  {/* Job Requirements */}
+                  <View style={styles.sectionCard}>
+                    <Text style={styles.sectionLabel}>Job Requirements</Text>
+                    {selectedJob.requirements || selectedJob.description
+                      ? String(
+                          selectedJob.requirements || selectedJob.description,
+                        )
+                          .split("\n")
+                          .filter((line: string) => line.trim().length > 0)
+                          .map((line: string, idx: number) => (
+                            <Text
+                              key={`${line}-${idx}`}
+                              style={styles.requirementText}
+                            >
+                              {`- ${line.replace(/^[-*]\s*/, "")}`}
+                            </Text>
+                          ))
+                      : [
+                          <Text key="no-req" style={styles.requirementText}>
+                            No requirements provided
+                          </Text>,
+                        ]}
                   </View>
                 </View>
               )}
@@ -370,7 +419,7 @@ export default function JobsScreen() {
                     <TextInput
                       style={styles.resumeInput}
                       placeholder="https://example.com/your-resume.pdf"
-                      placeholderTextColor={colors.textLight}
+                      placeholderTextColor={colors.textDark}
                       value={resumeUrl}
                       onChangeText={setResumeUrl}
                       editable={!submittingApplication}
@@ -417,41 +466,32 @@ const styles = StyleSheet.create({
 
   headerContainer: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    paddingHorizontal: Spacing.LG,
-    paddingTop: Spacing.LG,
-    paddingBottom: Spacing.XL,
-    gap: Spacing.MD,
+    alignItems: "center",
+    paddingHorizontal: Spacing.MD,
+    paddingTop: Spacing.MD,
+    paddingBottom: Spacing.MD,
   },
 
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.card,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
   },
 
-  headerContent: {
-    flex: 1,
+  headerSpacer: {
+    width: 36,
+    height: 36,
   },
 
   headerTitle: {
+    flex: 1,
     fontFamily: "Poppins-SemiBold",
     fontSize: FontSizes.LG,
     fontWeight: "600",
     color: colors.textDark,
-  },
-
-  headerSubtitle: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.SM,
-    fontWeight: "400",
-    color: colors.textLight,
-    marginTop: Spacing.XS,
+    textAlign: "center",
   },
 
   searchContainer: {
@@ -462,8 +502,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.MD,
     backgroundColor: colors.card,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
     gap: Spacing.SM,
   },
 
@@ -490,8 +528,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 16,
     padding: Spacing.MD,
-    borderWidth: 1,
-    borderColor: colors.border,
     gap: Spacing.MD,
   },
 
@@ -505,14 +541,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
   },
 
   jobTitleSection: {
     flex: 1,
-    gap: Spacing.XS,
+    gap: 0.5,
   },
 
   jobTitle: {
@@ -541,7 +576,7 @@ const styles = StyleSheet.create({
     gap: Spacing.MD,
     paddingTop: Spacing.SM,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.background,
   },
 
   detailItem: {
@@ -554,14 +589,14 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-Regular",
     fontSize: FontSizes.XS,
     fontWeight: "400",
-    color: colors.primary,
+    color: colors.textDark,
   },
 
   badge: {
     fontFamily: "Poppins-Regular",
     fontSize: FontSizes.XS,
     fontWeight: "400",
-    color: colors.primary,
+    color: colors.textDark,
     backgroundColor: colors.background,
     paddingHorizontal: Spacing.SM,
     paddingVertical: Spacing.XS,
@@ -575,7 +610,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingTop: Spacing.SM,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.background,
   },
 
   salaryLabel: {
@@ -589,7 +624,7 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-SemiBold",
     fontSize: FontSizes.SM,
     fontWeight: "600",
-    color: colors.primary,
+    color: colors.textDark,
     marginTop: Spacing.XS,
   },
 
@@ -745,6 +780,30 @@ const styles = StyleSheet.create({
     gap: Spacing.MD,
   },
 
+  detailChipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.XS,
+  },
+
+  detailChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.XS,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: Spacing.SM,
+    paddingVertical: Spacing.XS,
+    borderRadius: 999,
+  },
+
+  detailChipText: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.XS,
+    color: colors.textLight,
+  },
+
   infoCard: {
     flexDirection: "row",
     gap: Spacing.MD,
@@ -803,9 +862,26 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.LG,
   },
 
+  sectionCard: {
+    gap: Spacing.SM,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: Spacing.MD,
+  },
+
   descriptionText: {
     fontFamily: "Poppins-Regular",
     fontSize: FontSizes.Base,
+    fontWeight: "400",
+    color: colors.textDark,
+    lineHeight: 22,
+  },
+
+  requirementText: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.SM,
     fontWeight: "400",
     color: colors.textDark,
     lineHeight: 22,
