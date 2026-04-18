@@ -1,12 +1,27 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Switch } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  Switch,
+} from "react-native";
 import { useState, useEffect } from "react";
+import { useRouter } from "expo-router";
+import NestedScreenHeader from "../../src/components/NestedScreenHeader";
 import { useAuth } from "../../src/context/AuthContext";
 import { profileService, mentorshipService } from "../../src/services/api";
+import { loadMentorAssessmentState } from "../../src/services/mentorMatch";
 import { Ionicons } from "@expo/vector-icons";
+import colors from "@/src/theme/colors";
+import { Colors } from "@/constants/theme";
 
 export default function Availability() {
+  const router = useRouter();
   const { userId } = useAuth();
   const [isAvailable, setIsAvailable] = useState(false);
+  const [hasRequiredDetails, setHasRequiredDetails] = useState(false);
+  const [hasCompletedAssessment, setHasCompletedAssessment] = useState(false);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
@@ -16,9 +31,30 @@ export default function Availability() {
 
   const fetchCurrentStatus = async () => {
     if (!userId) return;
+
+    const hasText = (value: unknown) =>
+      typeof value === "string" && value.trim().length > 0;
+    const hasList = (value: unknown) =>
+      Array.isArray(value) && value.some((item) => hasText(item));
+
+    const isMentorProfileReady = (profile: any) =>
+      hasText(profile?.institutionName) &&
+      (profile?.graduationYear != null || hasText(profile?.graduationYear)) &&
+      hasText(profile?.industry) &&
+      hasText(profile?.currentCompany) &&
+      hasText(profile?.jobTitle) &&
+      hasText(profile?.experienceLevel) &&
+      hasList(profile?.skills);
+
     try {
-      const profile = await profileService.getAlumniProfile(parseInt(userId));
+      const [profile, assessmentState] = await Promise.all([
+        profileService.getAlumniProfile(parseInt(userId)),
+        loadMentorAssessmentState(userId),
+      ]);
+
       setIsAvailable(profile.isAvailableForMentorship);
+      setHasRequiredDetails(isMentorProfileReady(profile));
+      setHasCompletedAssessment(Boolean(assessmentState?.completed));
     } catch (error) {
       console.error("Failed to fetch alumni profile:", error);
       Alert.alert("Error", "Could not load your availability status.");
@@ -29,14 +65,51 @@ export default function Availability() {
 
   const toggleAvailability = async (value: boolean) => {
     if (!userId) return;
+
+    if (value && !hasRequiredDetails) {
+      Alert.alert(
+        "Complete mentor details",
+        "Add your alumni profile details from My Profile before enabling mentorship.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Go to My Profile",
+            onPress: () => router.push("/(alumni)/profile" as any),
+          },
+        ],
+      );
+      return;
+    }
+
+    if (value && !hasCompletedAssessment) {
+      Alert.alert(
+        "Complete mentor assessment",
+        "Finish the mentor assessment from My Profile before enabling mentorship.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Go to My Profile",
+            onPress: () => router.push("/(alumni)/profile" as any),
+          },
+        ],
+      );
+      return;
+    }
+
     setUpdating(true);
     try {
       await mentorshipService.updateAvailability(parseInt(userId), value);
       setIsAvailable(value);
-      Alert.alert("Success", `Mentorship availability turned ${value ? "ON" : "OFF"}`);
+      Alert.alert(
+        "Success",
+        `Mentorship availability turned ${value ? "ON" : "OFF"}`,
+      );
     } catch (error) {
       console.error("Failed to update availability:", error);
-      Alert.alert("Error", "Failed to update your availability. Please try again.");
+      Alert.alert(
+        "Error",
+        "Failed to update your availability. Please try again.",
+      );
     } finally {
       setUpdating(false);
     }
@@ -50,72 +123,92 @@ export default function Availability() {
     );
   }
 
+  function GuidelinesItem({
+    heading,
+    text,
+  }: {
+    heading: string;
+    text: string;
+  }) {
+    return (
+      <View style={styles.guidelineRow}>
+        <Text style={styles.guidelineHeading}>{heading}</Text>
+        <Text style={styles.guidelineText}>{text}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Ionicons name="calendar-outline" size={32} color="#0F4C4F" />
-        <Text style={styles.title}>Mentorship Availability</Text>
-      </View>
-      
-      <View style={styles.card}>
-        <View style={styles.infoRow}>
-          <View style={styles.infoTextContainer}>
-            <Text style={styles.label}>Open for Mentorship</Text>
-            <Text style={styles.description}>
-              When enabled, students will be able to see you in the mentors list and send you mentorship requests.
-            </Text>
+      <NestedScreenHeader
+        title="Mentorship Availability"
+        onBack={() => router.back()}
+      />
+      <View style={{ padding: 16 }}>
+        <View style={styles.card}>
+          <View style={styles.infoRow}>
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.label}>Open for Mentorship</Text>
+              <Text style={styles.description}>
+                Students are matched with you only when mentorship is ON and
+                your profile plus mentor assessment are complete.
+              </Text>
+            </View>
+            <Switch
+              value={isAvailable}
+              onValueChange={toggleAvailability}
+              disabled={updating}
+              trackColor={{ false: "#ccc", true: "#0F4C4F" }}
+              thumbColor={isAvailable ? "#fff" : "#f4f3f4"}
+            />
           </View>
-          <Switch
-            value={isAvailable}
-            onValueChange={toggleAvailability}
-            disabled={updating}
-            trackColor={{ false: "#ccc", true: "#0F4C4F" }}
-            thumbColor={isAvailable ? "#fff" : "#f4f3f4"}
-          />
+
+          {updating && (
+            <View style={styles.updatingOverlay}>
+              <ActivityIndicator size="small" color="#0F4C4F" />
+              <Text style={styles.updatingText}>Updating...</Text>
+            </View>
+          )}
         </View>
 
-        {updating && (
-          <View style={styles.updatingOverlay}>
-            <ActivityIndicator size="small" color="#0F4C4F" />
-            <Text style={styles.updatingText}>Updating...</Text>
-          </View>
-        )}
+        <View style={styles.guidelinesCard}>
+          <Text style={styles.guidelineTitle}>Mentor Guidelines</Text>
+          <GuidelinesItem
+            heading="1. Complete Your Profile"
+            text="Turn on mentorship only after completing your profile and assessment. Student will be matched with you only when everything is properly setup."
+          />
+          <GuidelinesItem
+            heading="2. Finish Professional Details"
+            text="Go to Profile and finish your professional profile and assessment before activating mentorship."
+          />
+          <GuidelinesItem
+            heading="3. Respond Promptly"
+            text="Make sure to respond to student requests within 48 hours."
+          />
+          <GuidelinesItem
+            heading="4. Keep Mentorship On"
+            text="You can turn off mentorship anytime, but try to keep it on if you want to be matched with students and provide them mentorship."
+          />
+        </View>
       </View>
-
-      <View style={styles.guidelinesCard}>
-        <Text style={styles.guidelineTitle}>Mentor Guidelines</Text>
-        <BulletItem text="Respond to requests within 48 hours." />
-        <BulletItem text="Be clear about your availability for sessions." />
-        <BulletItem text="Set expectations regarding call duration and frequency." />
-      </View>
-    </View>
-  );
-}
-
-function BulletItem({ text }: { text: string }) {
-  return (
-    <View style={styles.bulletRow}>
-      <Ionicons name="checkmark-circle" size={18} color="#0F4C4F" style={{ marginRight: 8 }} />
-      <Text style={styles.bulletText}>{text}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#F8F9FA" },
+  container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { flexDirection: "row", alignItems: "center", marginBottom: 25 },
-  title: { fontSize: 24, fontWeight: "bold", marginLeft: 10, color: "#0F4C4F" },
   card: {
     backgroundColor: "white",
     borderRadius: 16,
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    marginBottom: 20,
+    marginBottom: 12,
     position: "relative",
   },
   infoRow: {
@@ -124,7 +217,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   infoTextContainer: { flex: 1, marginRight: 15 },
-  label: { fontSize: 18, fontWeight: "600", color: "#333", marginBottom: 4 },
+  label: { fontSize: 17.5, fontWeight: "600", color: "#333", marginBottom: 4 },
   description: { fontSize: 14, color: "#666", lineHeight: 20 },
   updatingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -136,11 +229,28 @@ const styles = StyleSheet.create({
   },
   updatingText: { marginLeft: 10, fontWeight: "500", color: "#0F4C4F" },
   guidelinesCard: {
-    backgroundColor: "#E7F3F4",
     borderRadius: 16,
-    padding: 20,
+    padding: 4,
   },
-  guidelineTitle: { fontSize: 18, fontWeight: "bold", color: "#0F4C4F", marginBottom: 15 },
-  bulletRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12 },
-  bulletText: { fontSize: 15, color: "#444", flex: 1 },
+  guidelineTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: colors.primary,
+    marginBottom: 15,
+  },
+  guidelineRow: {
+    marginBottom: 12,
+  },
+  guidelineHeading: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.textDark,
+    marginBottom: 2,
+  },
+  guidelineText: {
+    fontSize: 14,
+    color: colors.textDark,
+    lineHeight: 20,
+    textAlign: "justify",
+  },
 });

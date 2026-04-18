@@ -3,13 +3,10 @@ import { useRouter } from "expo-router";
 import {
   Banknote,
   CheckCircle,
-  ChevronLeft,
   Clock,
   ExternalLink,
   Heart,
-  History,
   Image as ImageIcon,
-  Search,
   Send,
   X,
   XCircle,
@@ -29,6 +26,8 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../../constants/theme";
+import NestedScreenHeader from "../../src/components/NestedScreenHeader";
+import SegmentedControl from "../../src/components/SegmentedControl";
 import { useAuth } from "../../src/context/AuthContext";
 import {
   Campaign,
@@ -55,6 +54,11 @@ export default function AlumniDonationsScreen() {
   const [note, setNote] = useState("");
   const [screenshot, setScreenshot] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const donationTabs = [
+    { value: "explore" as const, label: "Explore" },
+    { value: "my" as const, label: "My History" },
+  ];
 
   useEffect(() => {
     fetchData();
@@ -84,7 +88,7 @@ export default function AlumniDonationsScreen() {
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       allowsEditing: true,
       quality: 0.7,
     });
@@ -202,7 +206,6 @@ export default function AlumniDonationsScreen() {
           setModalVisible(true);
         }}
       >
-        <Heart size={18} color={colors.white} fill={colors.white} />
         <Text style={styles.contributeButtonText}>Contribute Now</Text>
       </TouchableOpacity>
     </View>
@@ -217,7 +220,9 @@ export default function AlumniDonationsScreen() {
             {new Date(item.submittedAt).toLocaleDateString()}
           </Text>
         </View>
-        <Text style={styles.contributionAmount}>+${item.amount.toFixed(0)}</Text>
+        <Text style={styles.contributionAmount}>
+          +${item.amount.toFixed(0)}
+        </Text>
       </View>
 
       <View style={styles.statusRow}>
@@ -266,57 +271,14 @@ export default function AlumniDonationsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ChevronLeft size={24} color="#F4EAD8" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Donations</Text>
-          <Text style={styles.headerSubtitle}>Give back to your community</Text>
-        </View>
-      </View>
+      <NestedScreenHeader title="Donations" onBack={() => router.back()} />
 
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "explore" && styles.activeTab]}
-          onPress={() => setActiveTab("explore")}
-        >
-          <Search
-            size={18}
-            color={activeTab === "explore" ? colors.primary : colors.textLight}
-          />
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "explore" && styles.activeTabText,
-            ]}
-          >
-            Explore
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "my" && styles.activeTab]}
-          onPress={() => setActiveTab("my")}
-        >
-          <History
-            size={18}
-            color={activeTab === "my" ? colors.primary : colors.textLight}
-          />
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "my" && styles.activeTabText,
-            ]}
-          >
-            My History
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <SegmentedControl
+        options={donationTabs}
+        value={activeTab}
+        onChange={setActiveTab}
+        containerStyle={styles.segmentedControlWrap}
+      />
 
       {loading ? (
         <ActivityIndicator
@@ -486,68 +448,15 @@ export default function AlumniDonationsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.LG,
-    paddingTop: 50,
-    paddingBottom: Spacing.XL,
-    gap: Spacing.MD,
-    backgroundColor: "#0F4C4F",
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(244, 234, 216, 0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(244, 234, 216, 0.3)",
-  },
-  headerContent: { flex: 1 },
-  headerTitle: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 22,
-    color: "#F4EAD8",
-    fontWeight: "700",
-  },
-  headerSubtitle: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 13,
-    color: "rgba(244, 234, 216, 0.8)",
-    marginTop: 4,
-  },
-  tabContainer: {
-    flexDirection: "row",
-    padding: Spacing.MD,
-    backgroundColor: colors.white,
+  segmentedControlWrap: {
     marginHorizontal: Spacing.LG,
-    marginTop: -20,
-    borderRadius: 16,
+    marginTop: Spacing.SM,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    gap: Spacing.MD,
   },
-  tab: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
-  },
-  activeTab: { backgroundColor: "#f0f9ff" },
-  tabText: {
-    fontSize: FontSizes.SM,
-    color: colors.textLight,
-    fontWeight: "600",
-  },
-  activeTabText: { color: colors.primary, fontWeight: "700" },
   listContent: { padding: Spacing.LG, paddingTop: 20 },
   campaignCard: {
     backgroundColor: colors.white,

@@ -4,7 +4,7 @@ import { LucideIcon } from "lucide-react-native";
 import colors from "../theme/colors";
 import { FontSizes, Spacing } from "../../constants/theme";
 
-interface StatCardProps {
+interface DashboardStatCardProps {
   icon: LucideIcon;
   number: string;
   label: string;
@@ -13,18 +13,19 @@ interface StatCardProps {
     direction: "up" | "down";
   };
   style?: ViewStyle;
-  onPress?: () => void;
+  variant?: "row" | "grid";
 }
 
-export default function StatCard({
+export default function DashboardStatCard({
   icon: Icon,
   number,
   label,
   trend,
   style,
-}: StatCardProps) {
+  variant = "row",
+}: DashboardStatCardProps) {
   return (
-    <View style={[styles.card, style]}>
+    <View style={[styles.card, variant === "grid" && styles.cardGrid, style]}>
       <View style={styles.iconContainer}>
         <Icon size={24} color={colors.primary} strokeWidth={1.5} />
       </View>
@@ -56,6 +57,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 4,
+  },
+
+  cardGrid: {
+    flex: 0,
+    width: "48%",
   },
 
   iconContainer: {

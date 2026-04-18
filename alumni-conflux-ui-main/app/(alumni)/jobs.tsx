@@ -3,10 +3,8 @@ import {
   Briefcase,
   Building2,
   CheckCircle,
-  ChevronLeft,
   FileText,
   MapPin,
-  Plus,
   Search,
   Users,
   X,
@@ -14,6 +12,7 @@ import {
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -22,8 +21,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../../constants/theme";
+import FloatingAddButton from "../../src/components/FloatingAddButton";
+import NestedScreenHeader from "../../src/components/NestedScreenHeader";
+import SegmentedControl from "../../src/components/SegmentedControl";
 import { useAuth } from "../../src/context/AuthContext";
 import { jobsService } from "../../src/services/api";
 import colors from "../../src/theme/colors";
@@ -35,8 +36,10 @@ export default function AlumniJobsScreen() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [appliedJobs, setAppliedJobs] = useState<number[]>([]);
+  const [jobFilter, setJobFilter] = useState<"ALL" | "MY_JOBS">("ALL");
   const [modalVisible, setModalVisible] = useState(false);
   const [appsModalVisible, setAppsModalVisible] = useState(false);
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [loadingApps, setLoadingApps] = useState(false);
@@ -70,21 +73,38 @@ export default function AlumniJobsScreen() {
       setJobs(data);
     } catch (error) {
       console.error("Fetch jobs error:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to fetch jobs",
-      });
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredJobs = jobs.filter(
-    (job) =>
-      job.title.toLowerCase().includes(search.toLowerCase()) ||
-      job.company.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filteredJobs = jobs
+    .filter((job) => {
+      const matchesSearch =
+        job.title.toLowerCase().includes(search.toLowerCase()) ||
+        job.company.toLowerCase().includes(search.toLowerCase());
+      const matchesFilter =
+        jobFilter === "ALL"
+          ? job.alumniUserId !== Number(userId)
+          : jobFilter === "MY_JOBS"
+            ? job.alumniUserId === Number(userId)
+            : true;
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+      if (jobFilter === "MY_JOBS") {
+        return (
+          (b.alumniUserId === Number(userId) ? 1 : 0) -
+          (a.alumniUserId === Number(userId) ? 1 : 0)
+        );
+      }
+      return 0;
+    });
+
+  const jobFilterOptions = [
+    { label: "All Jobs", value: "ALL" },
+    { label: "My Jobs", value: "MY_JOBS" },
+  ];
 
   const handleApply = async (jobId: number, jobTitle: string) => {
     if (!userId) return;
@@ -94,18 +114,7 @@ export default function AlumniJobsScreen() {
         resumeUrl: "https://example.com/resume.pdf",
       });
       setAppliedJobs([...appliedJobs, jobId]);
-      Toast.show({
-        type: "success",
-        text1: "Application Submitted",
-        text2: `You applied for ${jobTitle}`,
-      });
-    } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Apply Failed",
-        text2: error.response?.data?.message || "Could not submit application",
-      });
-    }
+    } catch (error: any) {}
   };
 
   const validateJobForm = (): {
@@ -125,14 +134,12 @@ export default function AlumniJobsScreen() {
       salary: "",
     };
 
-    // Trim whitespace for validation
     const titleTrimmed = title.trim();
     const companyTrimmed = company.trim();
     const descriptionTrimmed = description.trim();
     const locationTrimmed = location.trim();
     const applyLinkTrimmed = applyLink.trim();
 
-    // Required fields check
     if (!titleTrimmed) {
       newErrors.title = "Job title is required";
     }
@@ -149,7 +156,6 @@ export default function AlumniJobsScreen() {
       newErrors.location = "Location is required";
     }
 
-    // Apply Link validation - check format
     if (!applyLinkTrimmed) {
       newErrors.applyLink = "Apply link or email is required";
     }
@@ -161,16 +167,10 @@ export default function AlumniJobsScreen() {
     const validationErrors = validateJobForm();
     setErrors(validationErrors);
 
-    // Check if there are any errors
     const hasErrors = Object.values(validationErrors).some(
       (error) => error !== "",
     );
     if (hasErrors) {
-      Toast.show({
-        type: "error",
-        text1: "Validation Error",
-        text2: "Please fix the errors below",
-      });
       return;
     }
 
@@ -186,20 +186,10 @@ export default function AlumniJobsScreen() {
         applyLink: applyLink.trim(),
       });
 
-      Toast.show({
-        type: "success",
-        text1: "Job Posted",
-        text2: "Your job opportunity has been posted successfully",
-      });
       setModalVisible(false);
       resetForm();
-      fetchJobs(); // Refresh list
+      fetchJobs();
     } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Posting Failed",
-        text2: error.response?.data?.message || "Could not post job",
-      });
     } finally {
       setSubmitting(false);
     }
@@ -217,13 +207,28 @@ export default function AlumniJobsScreen() {
     } catch (error: any) {
       console.error("Fetch applications error:", error);
       console.error("Error response:", error.response?.data);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: error.response?.data?.message || "Failed to fetch applications",
-      });
     } finally {
       setLoadingApps(false);
+    }
+  };
+
+  const handleViewDetails = (job: any) => {
+    setSelectedJob(job);
+    setDetailsModalVisible(true);
+  };
+
+  const handleOpenApplyLink = (link: string) => {
+    if (!link) return;
+    const trimmedLink = link.trim();
+    if (trimmedLink.includes("@")) {
+      Linking.openURL(`mailto:${trimmedLink}`).catch(() => {});
+    } else if (
+      trimmedLink.startsWith("http://") ||
+      trimmedLink.startsWith("https://")
+    ) {
+      Linking.openURL(trimmedLink).catch(() => {});
+    } else {
+      Linking.openURL(`https://${trimmedLink}`).catch(() => {});
     }
   };
 
@@ -247,26 +252,7 @@ export default function AlumniJobsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ChevronLeft size={24} color="#F4EAD8" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Job Hub</Text>
-          <Text style={styles.headerSubtitle}>
-            {loading ? "Loading..." : `${filteredJobs.length} jobs available`}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Plus size={24} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
+      <NestedScreenHeader title="Jobs" onBack={() => router.back()} />
 
       <View style={styles.searchContainer}>
         <Search size={20} color={colors.textLight} strokeWidth={1.5} />
@@ -276,6 +262,14 @@ export default function AlumniJobsScreen() {
           placeholderTextColor={colors.textLight}
           value={search}
           onChangeText={setSearch}
+        />
+      </View>
+
+      <View style={styles.segmentContainer}>
+        <SegmentedControl
+          options={jobFilterOptions}
+          value={jobFilter}
+          onChange={(value: string) => setJobFilter(value as "ALL" | "MY_JOBS")}
         />
       </View>
 
@@ -330,53 +324,61 @@ export default function AlumniJobsScreen() {
 
                 <View style={styles.jobFooter}>
                   <View>
-                    <Text style={styles.salaryLabel}>Expected Salary</Text>
+                    <Text style={styles.salaryLabel}>Salary</Text>
                     <Text style={styles.salary}>
                       {job.salary || "Not Specified"}
                     </Text>
                   </View>
-                  {job.alumniUserId === Number(userId) ? (
+                  <View style={styles.jobActionRow}>
                     <TouchableOpacity
-                      style={[
-                        styles.applyButton,
-                        { backgroundColor: colors.secondary || "#6366f1" },
-                      ]}
-                      onPress={() => handleViewApplications(job)}
+                      style={styles.viewDetailsButton}
+                      onPress={() => handleViewDetails(job)}
                     >
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 4,
-                        }}
+                      <Text style={styles.viewDetailsText}>View Details</Text>
+                    </TouchableOpacity>
+                    {job.alumniUserId === Number(userId) ? (
+                      <TouchableOpacity
+                        style={[
+                          styles.applyButton,
+                          { backgroundColor: colors.secondary || "#6366f1" },
+                        ]}
+                        onPress={() => handleViewApplications(job)}
                       >
-                        <Users size={16} color={colors.white} />
-                        <Text style={styles.buttonText}>Applications</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={[
-                        styles.applyButton,
-                        isApplied && styles.appliedButton,
-                      ]}
-                      disabled={isApplied}
-                      onPress={() => handleApply(job.id, job.title)}
-                    >
-                      {isApplied ? (
-                        <>
-                          <CheckCircle
-                            size={16}
-                            color={colors.success}
-                            strokeWidth={2}
-                          />
-                          <Text style={styles.appliedText}>Applied</Text>
-                        </>
-                      ) : (
-                        <Text style={styles.buttonText}>Apply</Text>
-                      )}
-                    </TouchableOpacity>
-                  )}
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          <Users size={16} color={colors.white} />
+                          <Text style={styles.buttonText}>Applications</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={[
+                          styles.applyButton,
+                          isApplied && styles.appliedButton,
+                        ]}
+                        disabled={isApplied}
+                        onPress={() => handleApply(job.id, job.title)}
+                      >
+                        {isApplied ? (
+                          <>
+                            <CheckCircle
+                              size={16}
+                              color={colors.success}
+                              strokeWidth={2}
+                            />
+                            <Text style={styles.appliedText}>Applied</Text>
+                          </>
+                        ) : (
+                          <Text style={styles.buttonText}>Apply</Text>
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
               </View>
             );
@@ -388,6 +390,8 @@ export default function AlumniJobsScreen() {
           </View>
         )}
       </ScrollView>
+
+      <FloatingAddButton onPress={() => setModalVisible(true)} />
 
       {/* View Applications Modal */}
       <Modal
@@ -401,7 +405,6 @@ export default function AlumniJobsScreen() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalTitle}>Applications</Text>
-                <Text style={styles.modalSubtitle}>{selectedJob?.title}</Text>
               </View>
               <TouchableOpacity onPress={() => setAppsModalVisible(false)}>
                 <X size={24} color={colors.textDark} />
@@ -469,6 +472,103 @@ export default function AlumniJobsScreen() {
         </View>
       </Modal>
 
+      {/* Job Details Modal */}
+      <Modal
+        visible={detailsModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setDetailsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Job Details</Text>
+              <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
+                <X size={24} color={colors.textDark} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Job Title</Text>
+                <View style={styles.detailValueContainer}>
+                  <Text style={styles.detailValueText}>
+                    {selectedJob?.title}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Company</Text>
+                <View style={styles.detailValueContainer}>
+                  <Text style={styles.detailValueText}>
+                    {selectedJob?.company}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Description</Text>
+                <View
+                  style={[styles.detailValueContainer, styles.detailTextArea]}
+                >
+                  <Text style={styles.detailValueText}>
+                    {selectedJob?.description || "Not provided"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Location</Text>
+                <View style={styles.detailValueContainer}>
+                  <Text style={styles.detailValueText}>
+                    {selectedJob?.location || "Not provided"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Job Type</Text>
+                <View style={styles.detailValueContainer}>
+                  <Text style={styles.detailValueText}>
+                    {selectedJob?.jobType ||
+                      selectedJob?.type ||
+                      "Not provided"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Salary</Text>
+                <View style={styles.detailValueContainer}>
+                  <Text style={styles.detailValueText}>
+                    {selectedJob?.salary || "Not provided"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Apply Link / Email</Text>
+                <TouchableOpacity
+                  style={styles.detailValueContainer}
+                  onPress={() => handleOpenApplyLink(selectedJob?.applyLink)}
+                  disabled={!selectedJob?.applyLink}
+                >
+                  <Text
+                    style={[
+                      styles.detailValueText,
+                      selectedJob?.applyLink && styles.linkText,
+                    ]}
+                  >
+                    {selectedJob?.applyLink || "Not provided"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Post Job Modal */}
       <Modal
         visible={modalVisible}
@@ -479,7 +579,7 @@ export default function AlumniJobsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Post Job Opportunity</Text>
+              <Text style={styles.modalTitle}>Post Jobs / Internships</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <X size={24} color={colors.textDark} />
               </TouchableOpacity>
@@ -572,10 +672,10 @@ export default function AlumniJobsScreen() {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Salary Range</Text>
+                <Text style={styles.label}>Salary</Text>
                 <TextInput
                   style={[styles.input, errors.salary && styles.inputError]}
-                  placeholder="e.g. $80k - $120k"
+                  placeholder="50K, 100K, etc."
                   value={salary}
                   onChangeText={setSalary}
                 />
@@ -621,53 +721,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.LG,
-    paddingTop: 50,
-    paddingBottom: Spacing.XL,
-    gap: Spacing.MD,
-    backgroundColor: "#0F4C4F",
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(244, 234, 216, 0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(244, 234, 216, 0.3)",
-  },
-  headerContent: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 22,
-    color: "#F4EAD8",
-    fontWeight: "700",
-  },
-  headerSubtitle: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 13,
-    color: "rgba(244, 234, 216, 0.8)",
-    marginTop: 4,
-  },
-  addButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: "#F4EAD8",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -687,12 +740,16 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.Base,
     color: colors.textDark,
   },
+  segmentContainer: {
+    paddingHorizontal: Spacing.LG,
+    paddingBottom: Spacing.MD,
+  },
   listContainer: {
     flex: 1,
   },
   listContent: {
     paddingHorizontal: Spacing.LG,
-    paddingBottom: Spacing.XXXL,
+    paddingBottom: Spacing.XXXL + 80,
     gap: Spacing.MD,
   },
   jobCard: {
@@ -769,6 +826,23 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
+  jobActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.SM,
+  },
+  viewDetailsButton: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.secondary,
+    borderRadius: 12,
+    paddingHorizontal: Spacing.MD,
+    paddingVertical: Spacing.SM,
+  },
+  viewDetailsText: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: FontSizes.SM,
+    color: colors.white,
+  },
   salaryLabel: {
     fontFamily: "Poppins-Regular",
     fontSize: FontSizes.XS,
@@ -780,7 +854,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   applyButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     paddingHorizontal: Spacing.MD,
     paddingVertical: Spacing.SM,
     borderRadius: 12,
@@ -824,13 +898,13 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: Spacing.LG,
-    maxHeight: "90%",
+    maxHeight: "96%",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: Spacing.XL,
+    marginBottom: Spacing.MD,
   },
   modalTitle: {
     fontFamily: "Poppins-SemiBold",
@@ -838,13 +912,12 @@ const styles = StyleSheet.create({
     color: colors.textDark,
   },
   formGroup: {
-    marginBottom: Spacing.LG,
+    marginBottom: Spacing.SM,
   },
   label: {
     fontFamily: "Poppins-Medium",
     fontSize: FontSizes.SM,
     color: colors.textDark,
-    marginBottom: Spacing.XS,
   },
   input: {
     backgroundColor: colors.card,
@@ -853,8 +926,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: Spacing.MD,
     fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.Base,
+    fontSize: FontSizes.SM,
     color: colors.textDark,
+  },
+  detailValueContainer: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: Spacing.MD,
+  },
+  detailValueText: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.SM,
+    color: colors.textDark,
+  },
+  detailTextArea: {
+    minHeight: 100,
+  },
+  linkText: {
+    color: colors.primary,
+    textDecorationLine: "underline",
   },
   inputError: {
     borderColor: "#ef4444",
@@ -873,7 +965,7 @@ const styles = StyleSheet.create({
   chipsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: Spacing.SM,
+    gap: Spacing.XS,
   },
   chip: {
     paddingHorizontal: Spacing.MD,

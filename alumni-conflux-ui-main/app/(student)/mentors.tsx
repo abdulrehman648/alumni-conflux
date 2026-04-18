@@ -1,26 +1,17 @@
 import { useRouter } from "expo-router";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Code,
-  MessageSquare,
-  Search,
-  Star,
-} from "lucide-react-native";
+import { ChevronRight, Code, MessageSquare } from "lucide-react-native";
 import {
   ActivityIndicator,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useCallback, useEffect, useState } from "react";
 import { FontSizes, Spacing } from "../../constants/theme";
+import NestedScreenHeader from "../../src/components/NestedScreenHeader";
 import { useAuth } from "../../src/context/AuthContext";
-import { useList } from "../../src/hooks/useAsync";
-import { mentorshipService } from "../../src/services/api";
+import { mentorshipService, profileService } from "../../src/services/api";
 import {
   loadMentorAssessmentState,
   normalizeMentorRecommendations,
@@ -30,7 +21,9 @@ import {
 import colors from "../../src/theme/colors";
 export default function MentorsScreen() {
   const router = useRouter();
-  const { userId, profileComplete } = useAuth();
+  const { userId } = useAuth();
+  const [academicDetailsComplete, setAcademicDetailsComplete] = useState(false);
+  const [academicLoading, setAcademicLoading] = useState(true);
   const [assessmentComplete, setAssessmentComplete] = useState(false);
   const [assessmentLoading, setAssessmentLoading] = useState(true);
   const [recommendedMentors, setRecommendedMentors] = useState<
@@ -41,25 +34,50 @@ export default function MentorsScreen() {
     null,
   );
   const [matchTags, setMatchTags] = useState<string[]>([]);
-  const canAccessMentors = profileComplete && assessmentComplete;
+  const canAccessMentors = academicDetailsComplete && assessmentComplete;
 
-  const fetchAvailableMentors = useCallback(
-    () =>
-      canAccessMentors
-        ? mentorshipService.getAvailableMentors()
-        : Promise.resolve([]),
-    [canAccessMentors],
-  );
+  const hasAcademicDetails = useCallback((profile: any) => {
+    const hasText = (value: unknown) =>
+      typeof value === "string" && value.trim().length > 0;
+    const hasList = (value: unknown) =>
+      Array.isArray(value) && value.some((item) => hasText(item));
 
-  // Fetch mentors using custom hook
-  const {
-    items: mentors,
-    searchQuery,
-    setSearchQuery,
-    loading,
-    error,
-    refetch,
-  } = useList(fetchAvailableMentors, "name");
+    return (
+      hasText(profile?.institutionName) &&
+      (profile?.expectedGraduationYear != null ||
+        hasText(profile?.expectedGraduationYear)) &&
+      hasText(profile?.department) &&
+      hasText(profile?.degreeProgram) &&
+      hasText(profile?.major) &&
+      (profile?.currentSemester != null || hasText(profile?.currentSemester)) &&
+      hasList(profile?.skills) &&
+      hasList(profile?.careerPreferences)
+    );
+  }, []);
+
+  useEffect(() => {
+    const checkAcademicDetails = async () => {
+      if (!userId) {
+        setAcademicDetailsComplete(false);
+        setAcademicLoading(false);
+        return;
+      }
+
+      try {
+        const studentProfile = await profileService.getStudentProfile(
+          Number(userId),
+        );
+        setAcademicDetailsComplete(hasAcademicDetails(studentProfile));
+      } catch (error) {
+        console.error("Failed to verify academic details:", error);
+        setAcademicDetailsComplete(false);
+      } finally {
+        setAcademicLoading(false);
+      }
+    };
+
+    checkAcademicDetails();
+  }, [userId, hasAcademicDetails]);
 
   useEffect(() => {
     const hydrateAssessment = async () => {
@@ -113,9 +131,9 @@ export default function MentorsScreen() {
       return;
     }
 
-    if (!profileComplete) {
+    if (!academicDetailsComplete) {
       setRecommendationError(
-        "Please complete your student profile before requesting mentor suggestions.",
+        "Please add your academic details before requesting mentor suggestions.",
       );
       router.push("/(student)/profile" as any);
       return;
@@ -155,16 +173,7 @@ export default function MentorsScreen() {
     }
   };
 
-  const renderRating = (rating: number) => {
-    return (
-      <View style={styles.ratingContainer}>
-        <Star size={14} color="#FDB022" strokeWidth={2} fill="#FDB022" />
-        <Text style={styles.ratingText}>{rating}</Text>
-      </View>
-    );
-  };
-
-  const renderMentorCard = (mentor: any, isRecommended = false) => {
+  const renderMentorCard = (mentor: any) => {
     const mentorName = mentor.name || mentor.fullName || "Mentor";
     const mentorIndustry =
       mentor.industry || mentor.designation || "Available mentor";
@@ -174,10 +183,7 @@ export default function MentorsScreen() {
     return (
       <TouchableOpacity
         key={mentorId}
-        style={[
-          styles.mentorCard,
-          isRecommended && styles.recommendedMentorCard,
-        ]}
+        style={[styles.mentorCard, styles.recommendedMentorCard]}
         onPress={() => {
           if (mentorId) {
             router.push(`/(student)/mentor-details/${mentorId}`);
@@ -186,10 +192,7 @@ export default function MentorsScreen() {
         activeOpacity={0.7}
       >
         <View
-          style={[
-            styles.avatarContainer,
-            isRecommended && styles.recommendedAvatarContainer,
-          ]}
+          style={[styles.avatarContainer, styles.recommendedAvatarContainer]}
         >
           <Text style={styles.avatarLetter}>{mentorName.charAt(0)}</Text>
         </View>
@@ -201,38 +204,26 @@ export default function MentorsScreen() {
             <View style={styles.skillsRow}>
               <Code size={14} color={colors.primary} strokeWidth={1.5} />
               <Text style={styles.skillsText}>
-                {mentorCompany ||
-                  (isRecommended
-                    ? "Ranked from your profile"
-                    : "Mentor profile")}
+                {mentorCompany || "Ranked from your profile"}
               </Text>
             </View>
           </View>
 
-          {isRecommended ? (
-            <View style={styles.matchSection}>
-              <View style={styles.matchBadge}>
-                <Text style={styles.matchBadgeText}>
-                  {mentor.matchScore != null
-                    ? `${mentor.matchScore}% match`
-                    : "Recommended"}
-                </Text>
-              </View>
-              {Array.isArray(mentor.matchReasons) &&
-                mentor.matchReasons.length > 0 && (
-                  <Text style={styles.matchReasonText} numberOfLines={2}>
-                    {mentor.matchReasons.slice(0, 2).join(" · ")}
-                  </Text>
-                )}
-            </View>
-          ) : (
-            <View style={styles.ratingSection}>
-              {renderRating(mentor.rating || 0)}
-              <Text style={styles.studentCount}>
-                {mentor.students || mentor.totalStudents || 0} students
+          <View style={styles.matchSection}>
+            <View style={styles.matchBadge}>
+              <Text style={styles.matchBadgeText}>
+                {mentor.matchScore != null
+                  ? `${mentor.matchScore}% match`
+                  : "Recommended"}
               </Text>
             </View>
-          )}
+            {Array.isArray(mentor.matchReasons) &&
+              mentor.matchReasons.length > 0 && (
+                <Text style={styles.matchReasonText} numberOfLines={2}>
+                  {mentor.matchReasons.slice(0, 2).join(" · ")}
+                </Text>
+              )}
+          </View>
         </View>
 
         <ChevronRight size={20} color={colors.textLight} strokeWidth={1.5} />
@@ -240,57 +231,31 @@ export default function MentorsScreen() {
     );
   };
 
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <MessageSquare size={48} color={colors.danger} strokeWidth={1} />
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-          <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ChevronLeft size={18} color={colors.textDark} strokeWidth={2.5} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Find a Mentor</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <NestedScreenHeader title="Find a Mentor" onBack={() => router.back()} />
 
-      {assessmentLoading ? (
+      {assessmentLoading || academicLoading ? (
         <View style={styles.loadingBanner}>
           <ActivityIndicator size="small" color={colors.primary} />
           <Text style={styles.loadingBannerText}>
-            Checking your mentor match status...
+            Checking your mentor readiness...
           </Text>
         </View>
-      ) : !profileComplete ? (
+      ) : !academicDetailsComplete ? (
         <View style={styles.gateBanner}>
           <View style={styles.recommendationCopy}>
-            <Text style={styles.recommendationTitle}>
-              Complete your profile
-            </Text>
+            <Text style={styles.recommendationTitle}>Add academic details</Text>
             <Text style={styles.recommendationSubtitle}>
-              Add your details first to unlock mentor assessments and AI
-              matching.
+              Complete your academic profile first to unlock mentor assessment
+              and AI mentor suggestions.
             </Text>
           </View>
           <TouchableOpacity
             style={styles.recommendationButton}
             onPress={() => router.push("/(student)/profile" as any)}
           >
-            <Text style={styles.recommendationButtonText}>
-              Complete profile
-            </Text>
+            <Text style={styles.recommendationButtonText}>Add details</Text>
           </TouchableOpacity>
         </View>
       ) : !assessmentComplete ? (
@@ -352,7 +317,7 @@ export default function MentorsScreen() {
         </View>
       )}
 
-      {profileComplete &&
+      {canAccessMentors &&
         recommendedMentors.length > 0 &&
         !recommendationLoading && (
           <View style={styles.recommendationsSection}>
@@ -366,68 +331,48 @@ export default function MentorsScreen() {
             <View style={styles.recommendationsList}>
               {recommendedMentors
                 .slice(0, 5)
-                .map((mentor) => renderMentorCard(mentor, true))}
+                .map((mentor) => renderMentorCard(mentor))}
             </View>
           </View>
         )}
 
       {canAccessMentors ? (
-        <>
-          <View style={styles.searchContainer}>
-            <Search size={20} color={colors.textLight} strokeWidth={1.5} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search by skill or name"
-              placeholderTextColor={colors.textLight}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Loading mentors...</Text>
-            </View>
-          ) : mentors.length > 0 ? (
-            <ScrollView
-              style={styles.listContainer}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.listContent}
-            >
-              {mentors.map((mentor) => renderMentorCard(mentor))}
-            </ScrollView>
-          ) : (
-            <View style={styles.emptyState}>
-              <MessageSquare
-                size={48}
-                color={colors.textLight}
-                strokeWidth={1}
-              />
-              <Text style={styles.emptyStateText}>No mentors found</Text>
-            </View>
-          )}
-        </>
+        <View style={styles.lockedMentorsState}>
+          <MessageSquare size={48} color={colors.textLight} strokeWidth={1} />
+          <Text style={styles.emptyStateText}>No AI suggestions yet</Text>
+          <Text style={styles.emptyStateSubtext}>
+            Generate your personalized list to view mentors selected by AI.
+          </Text>
+          <TouchableOpacity
+            style={styles.lockedStateButton}
+            onPress={handleRequestRecommendations}
+            disabled={recommendationLoading}
+          >
+            <Text style={styles.lockedStateButtonText}>
+              {recommendationLoading ? "Generating" : "Get suggestions"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <View style={styles.lockedMentorsState}>
           <MessageSquare size={48} color={colors.textLight} strokeWidth={1} />
           <Text style={styles.emptyStateText}>Mentor list is locked</Text>
           <Text style={styles.emptyStateSubtext}>
-            Complete your student profile and finish the 3 assessments to view
-            available mentors.
+            Complete your academic profile and finish the 3 assessments to view
+            AI-suggested mentors.
           </Text>
           <TouchableOpacity
             style={styles.lockedStateButton}
             onPress={() =>
               router.push(
-                profileComplete
+                academicDetailsComplete
                   ? "/(student)/mentor-assessment"
                   : "/(student)/profile",
               )
             }
           >
             <Text style={styles.lockedStateButtonText}>
-              {profileComplete ? "Start tests" : "Complete profile"}
+              {academicDetailsComplete ? "Start tests" : "Add details"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -440,36 +385,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.LG,
-    paddingTop: Spacing.MD,
-    paddingBottom: Spacing.MD,
-  },
-
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  headerSpacer: {
-    width: 36,
-    height: 36,
-  },
-
-  headerTitle: {
-    flex: 1,
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.LG,
-    fontWeight: "600",
-    color: colors.textDark,
-    textAlign: "center",
   },
 
   searchContainer: {

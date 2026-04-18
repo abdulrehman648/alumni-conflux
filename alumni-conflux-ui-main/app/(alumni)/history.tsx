@@ -1,6 +1,10 @@
 import { View, Text, StyleSheet, FlatList } from "react-native";
+import { useRouter } from "expo-router";
+import NestedScreenHeader from "../../src/components/NestedScreenHeader";
+import colors from "@/src/theme/colors";
 
 export default function History() {
+  const router = useRouter();
 
   const sessions = [
     { id: "1", student: "Ali", date: "Mon, 10 AM" },
@@ -9,50 +13,40 @@ export default function History() {
 
   return (
     <View style={styles.container}>
-
-      <Text style={styles.title}>Session History</Text>
+      <NestedScreenHeader
+        title="Session History"
+        onBack={() => router.back()}
+      />
 
       <FlatList
         data={sessions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-
           <View style={styles.card}>
             <Text style={styles.name}>{item.student}</Text>
             <Text>{item.date}</Text>
           </View>
-
         )}
       />
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "#F4EAD8"
-  },
-
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15
+    backgroundColor: colors.background,
   },
 
   card: {
-    backgroundColor: "white",
+    backgroundColor: colors.white,
     padding: 15,
     borderRadius: 15,
     marginBottom: 10,
-    elevation: 3
+    elevation: 3,
   },
 
   name: {
-    fontWeight: "bold"
-  }
-
+    fontWeight: "bold",
+  },
 });

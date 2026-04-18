@@ -1105,8 +1105,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   activeChip: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
   chipText: {
     fontFamily: "Poppins-Medium",
@@ -1117,7 +1117,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   submitButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     paddingVertical: Spacing.MD,
     borderRadius: 12,
     alignItems: "center",

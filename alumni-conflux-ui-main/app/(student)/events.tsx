@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 import {
   Calendar,
-  ChevronLeft,
   Clock,
   MapPin,
   Search,
@@ -19,6 +18,7 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../../constants/theme";
+import NestedScreenHeader from "../../src/components/NestedScreenHeader";
 import colors from "../../src/theme/colors";
 import { eventsService } from "../../src/services/api";
 import { useAuth } from "../../src/context/AuthContext";
@@ -86,17 +86,7 @@ export default function EventsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ChevronLeft size={18} color={colors.textDark} strokeWidth={2.5} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Upcoming Events</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <NestedScreenHeader title="Upcoming Events" onBack={() => router.back()} />
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -223,36 +213,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.MD,
-    paddingTop: Spacing.MD,
-    paddingBottom: Spacing.MD,
-  },
-
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  headerSpacer: {
-    width: 36,
-    height: 36,
-  },
-
-  headerTitle: {
-    flex: 1,
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.LG,
-    fontWeight: "600",
-    color: colors.textDark,
-    textAlign: "center",
   },
 
   searchContainer: {

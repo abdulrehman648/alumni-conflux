@@ -1,17 +1,13 @@
 import { useRouter } from "expo-router";
-import { 
-  Calendar, 
-  ChevronLeft, 
-  Clock, 
-  MapPin, 
-  Plus, 
-  Users,
-  X 
-} from "lucide-react-native";
+import { Calendar, Clock, Edit2, MapPin, Users, X } from "lucide-react-native";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,8 +15,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../../constants/theme";
+import FloatingAddButton from "../../src/components/FloatingAddButton";
+import NestedScreenHeader from "../../src/components/NestedScreenHeader";
 import colors from "../../src/theme/colors";
 import { eventsService } from "../../src/services/api";
 import { useAuth } from "../../src/context/AuthContext";
@@ -41,9 +38,16 @@ export default function AlumniEventsScreen() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [eventDate, setEventDate] = useState("");
-  const [location, setLocation] = useState("");
   const [targetAudience, setTargetAudience] = useState("ALL");
   const [submitting, setSubmitting] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
+  const [errors, setErrors] = useState({
+    title: "",
+    description: "",
+    eventDate: "",
+  });
 
   useEffect(() => {
     if (userId) {
@@ -58,11 +62,6 @@ export default function AlumniEventsScreen() {
       setEvents(data);
     } catch (error) {
       console.error("Fetch events error:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to fetch events",
-      });
     } finally {
       setLoading(false);
     }
@@ -74,54 +73,34 @@ export default function AlumniEventsScreen() {
     try {
       await eventsService.register(eventId, Number(userId));
       setRegisteredEvents([...registeredEvents, eventId]);
-      Toast.show({
-        type: "success",
-        text1: "Registered!",
-        text2: `You are registered for ${eventTitle}`,
-      });
       fetchEvents(); // Refresh to update attendee count
-    } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Registration Failed",
-        text2: error.response?.data?.message || "Could not register for event",
-      });
-    }
+    } catch (error: any) {}
   };
 
   const handleCreateRequest = async () => {
-    if (!title || !description || !eventDate || !location) {
-      Toast.show({
-        type: "error",
-        text1: "Missing Fields",
-        text2: "Please fill in all fields",
-      });
-      return;
-    }
+    const validationErrors = {
+      title: title.trim() ? "" : "Event title is required",
+      description: description.trim() ? "" : "Description is required",
+      eventDate: eventDate.trim() ? "" : "Date & time is required",
+    };
+
+    setErrors(validationErrors);
+
+    const hasErrors = Object.values(validationErrors).some(
+      (error) => error !== "",
+    );
 
     setSubmitting(true);
     try {
       await eventsService.request(Number(userId), {
-        title,
-        description,
-        eventDate, // Expects ISO format like "2026-05-20T19:00:00"
-        location,
+        title: title.trim(),
+        description: description.trim(),
+        eventDate,
         targetAudience,
-      });
-
-      Toast.show({
-        type: "success",
-        text1: "Request Sent",
-        text2: "Your event request has been submitted for admin approval",
       });
       setModalVisible(false);
       resetForm();
     } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Request Failed",
-        text2: error.response?.data?.message || "Could not submit event request",
-      });
     } finally {
       setSubmitting(false);
     }
@@ -136,13 +115,38 @@ export default function AlumniEventsScreen() {
       setAttendees(data);
     } catch (error) {
       console.error("Fetch attendees error:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to fetch attendees",
-      });
     } finally {
       setLoadingAttendees(false);
+    }
+  };
+
+  const formatDateTime = (date: Date) => {
+    const pad = (num: number) => num.toString().padStart(2, "0");
+    const yyyy = date.getFullYear();
+    const mm = pad(date.getMonth() + 1);
+    const dd = pad(date.getDate());
+    const hh = pad(date.getHours());
+    const min = pad(date.getMinutes());
+    const ss = pad(date.getSeconds());
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss}`;
+  };
+
+  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === "android") setShowDatePicker(false);
+    if (selectedDate) {
+      setTempDate(selectedDate);
+      if (Platform.OS === "android") setShowTimePicker(true);
+    }
+  };
+
+  const onTimeChange = (event: DateTimePickerEvent, selectedTime?: Date) => {
+    setShowTimePicker(false);
+    if (selectedTime) {
+      const finalDate = new Date(tempDate);
+      finalDate.setHours(selectedTime.getHours());
+      finalDate.setMinutes(selectedTime.getMinutes());
+      setTempDate(finalDate);
+      setEventDate(formatDateTime(finalDate));
     }
   };
 
@@ -150,33 +154,30 @@ export default function AlumniEventsScreen() {
     setTitle("");
     setDescription("");
     setEventDate("");
-    setLocation("");
     setTargetAudience("ALL");
+    setErrors({
+      title: "",
+      description: "",
+      eventDate: "",
+    });
+    setShowDatePicker(false);
+    setShowTimePicker(false);
+    setTempDate(new Date());
+  };
+
+  const handleOpenRequestModal = () => {
+    resetForm();
+    setModalVisible(true);
+  };
+
+  const handleCloseRequestModal = () => {
+    setModalVisible(false);
+    resetForm();
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ChevronLeft size={24} color="#F4EAD8" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Events</Text>
-          <Text style={styles.headerSubtitle}>
-            {loading ? "Loading..." : `${events.length} events available`}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Plus size={24} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
+      <NestedScreenHeader title="Events" onBack={() => router.back()} />
 
       {/* Events List */}
       <ScrollView
@@ -185,9 +186,9 @@ export default function AlumniEventsScreen() {
         contentContainerStyle={styles.listContent}
       >
         {loading ? (
-           <View style={styles.emptyState}>
-             <ActivityIndicator size="large" color={colors.primary} />
-           </View>
+          <View style={styles.emptyState}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
         ) : events.length > 0 ? (
           events.map((event) => {
             const isRegistered = registeredEvents.includes(event.id);
@@ -195,10 +196,16 @@ export default function AlumniEventsScreen() {
               <TouchableOpacity key={event.id} style={styles.eventCard}>
                 <View style={styles.eventTop}>
                   <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryText}>{event.targetAudience || "ALL"}</Text>
+                    <Text style={styles.categoryText}>
+                      {event.targetAudience || "ALL"}
+                    </Text>
                   </View>
                   <View style={styles.dateSection}>
-                    <Calendar size={16} color={colors.primary} strokeWidth={1.5} />
+                    <Calendar
+                      size={16}
+                      color={colors.primary}
+                      strokeWidth={1.5}
+                    />
                     <Text style={styles.eventDate}>
                       {new Date(event.eventDate).toLocaleDateString()}
                     </Text>
@@ -206,41 +213,65 @@ export default function AlumniEventsScreen() {
                 </View>
 
                 <Text style={styles.eventTitle}>{event.title}</Text>
-                
+
                 <View style={styles.eventDetails}>
                   <View style={styles.detailRow}>
-                    <Clock size={14} color={colors.textLight} strokeWidth={1.5} />
+                    <Clock
+                      size={14}
+                      color={colors.textLight}
+                      strokeWidth={1.5}
+                    />
                     <Text style={styles.detailText}>
-                      {new Date(event.eventDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(event.eventDate).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <MapPin size={14} color={colors.textLight} strokeWidth={1.5} />
+                    <MapPin
+                      size={14}
+                      color={colors.textLight}
+                      strokeWidth={1.5}
+                    />
                     <Text style={styles.detailText}>{event.location}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Users size={14} color={colors.textLight} strokeWidth={1.5} />
-                    <Text style={styles.detailText}>{event.currentAttendees || 0} attending</Text>
                   </View>
                 </View>
 
                 {event.creatorUserId === Number(userId) ? (
-                  <TouchableOpacity 
-                    style={[styles.registerButton, { backgroundColor: colors.secondary || "#6366f1" }]}
+                  <TouchableOpacity
+                    style={[
+                      styles.registerButton,
+                      { backgroundColor: colors.secondary || "#6366f1" },
+                    ]}
                     onPress={() => handleViewAttendees(event)}
                   >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
                       <Users size={16} color={colors.white} />
                       <Text style={styles.registerText}>View Attendees</Text>
                     </View>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity 
-                    style={[styles.registerButton, isRegistered && styles.registeredButton]}
+                  <TouchableOpacity
+                    style={[
+                      styles.registerButton,
+                      isRegistered && styles.registeredButton,
+                    ]}
                     onPress={() => handleRegister(event.id, event.title)}
                     disabled={isRegistered}
                   >
-                    <Text style={[styles.registerText, isRegistered && styles.registeredText]}>
+                    <Text
+                      style={[
+                        styles.registerText,
+                        isRegistered && styles.registeredText,
+                      ]}
+                    >
                       {isRegistered ? "Registered" : "Join Event"}
                     </Text>
                   </TouchableOpacity>
@@ -255,6 +286,8 @@ export default function AlumniEventsScreen() {
           </View>
         )}
       </ScrollView>
+
+      <FloatingAddButton onPress={handleOpenRequestModal} />
 
       {/* View Attendees Modal */}
       <Modal
@@ -276,7 +309,11 @@ export default function AlumniEventsScreen() {
             </View>
 
             {loadingAttendees ? (
-              <ActivityIndicator size="large" color={colors.primary} style={{ margin: 40 }} />
+              <ActivityIndicator
+                size="large"
+                color={colors.primary}
+                style={{ margin: 40 }}
+              />
             ) : attendees.length > 0 ? (
               <ScrollView showsVerticalScrollIndicator={false}>
                 {attendees.map((person) => (
@@ -286,7 +323,9 @@ export default function AlumniEventsScreen() {
                     </View>
                     <View style={styles.personInfo}>
                       <Text style={styles.personName}>{person.userName}</Text>
-                      <Text style={styles.personDate}>Registered: {person.registrationDate}</Text>
+                      <Text style={styles.personDate}>
+                        Registered: {person.registrationDate}
+                      </Text>
                     </View>
                   </View>
                 ))}
@@ -307,13 +346,13 @@ export default function AlumniEventsScreen() {
         visible={modalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={handleCloseRequestModal}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Request New Event</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity onPress={handleCloseRequestModal}>
                 <X size={24} color={colors.textDark} />
               </TouchableOpacity>
             </View>
@@ -322,44 +361,71 @@ export default function AlumniEventsScreen() {
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Event Title</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, errors.title && styles.inputError]}
                   placeholder="e.g. Alumni Networking 2026"
                   value={title}
                   onChangeText={setTitle}
                 />
+                {errors.title ? (
+                  <Text style={styles.errorText}>{errors.title}</Text>
+                ) : null}
               </View>
 
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Description</Text>
                 <TextInput
-                  style={[styles.input, styles.textArea]}
+                  style={[
+                    styles.input,
+                    errors.description && styles.inputError,
+                    styles.textArea,
+                  ]}
                   placeholder="Tell us about the event..."
                   multiline
                   numberOfLines={4}
                   value={description}
                   onChangeText={setDescription}
                 />
+                {errors.description ? (
+                  <Text style={styles.errorText}>{errors.description}</Text>
+                ) : null}
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Date & Time (YYYY-MM-DDTHH:MM:SS)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="2026-05-20T19:00:00"
-                  value={eventDate}
-                  onChangeText={setEventDate}
-                />
+                <Text style={styles.label}>Date & Time</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.datePickerButton,
+                    errors.eventDate && styles.inputError,
+                  ]}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Text style={styles.datePickerText}>
+                    {eventDate
+                      ? eventDate.replace("T", " ")
+                      : "Select Date & Time"}
+                  </Text>
+                  <Edit2 size={16} color={colors.primary} />
+                </TouchableOpacity>
+                {errors.eventDate ? (
+                  <Text style={styles.errorText}>{errors.eventDate}</Text>
+                ) : null}
               </View>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Location</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. Main Hall or Zoom Link"
-                  value={location}
-                  onChangeText={setLocation}
+              {showDatePicker && (
+                <DateTimePicker
+                  value={tempDate}
+                  mode="date"
+                  onChange={onDateChange}
                 />
-              </View>
+              )}
+
+              {showTimePicker && (
+                <DateTimePicker
+                  value={tempDate}
+                  mode="time"
+                  onChange={onTimeChange}
+                />
+              )}
 
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Target Audience</Text>
@@ -373,16 +439,20 @@ export default function AlumniEventsScreen() {
                       ]}
                       onPress={() => setTargetAudience(role)}
                     >
-                      <Text style={[
-                        styles.chipText,
-                        targetAudience === role && styles.activeChipText,
-                      ]}>{role}</Text>
+                      <Text
+                        style={[
+                          styles.chipText,
+                          targetAudience === role && styles.activeChipText,
+                        ]}
+                      >
+                        {role}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               </View>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleCreateRequest}
                 disabled={submitting}
@@ -406,59 +476,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.LG,
-    paddingTop: 50,
-    paddingBottom: Spacing.XL,
-    gap: Spacing.MD,
-    backgroundColor: "#0F4C4F",
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(244, 234, 216, 0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(244, 234, 216, 0.3)",
-  },
-  headerContent: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 22,
-    color: "#F4EAD8",
-    fontWeight: "700",
-  },
-  headerSubtitle: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 13,
-    color: "rgba(244, 234, 216, 0.8)",
-    marginTop: 4,
-  },
-  addButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: "#F4EAD8",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
   listContainer: {
     flex: 1,
   },
   listContent: {
     paddingHorizontal: Spacing.LG,
-    paddingBottom: Spacing.XXXL,
+    paddingBottom: Spacing.XXXL + 80,
     gap: Spacing.MD,
   },
   eventCard: {
@@ -517,7 +540,7 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   registerButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     paddingVertical: Spacing.SM,
     borderRadius: 12,
     alignItems: "center",
@@ -531,10 +554,10 @@ const styles = StyleSheet.create({
   registeredButton: {
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.success,
+    borderColor: colors.secondary,
   },
   registeredText: {
-    color: colors.success,
+    color: colors.secondary,
   },
   emptyState: {
     flex: 1,
@@ -572,7 +595,7 @@ const styles = StyleSheet.create({
     color: colors.textDark,
   },
   formGroup: {
-    marginBottom: Spacing.LG,
+    marginBottom: Spacing.MD,
   },
   label: {
     fontFamily: "Poppins-Medium",
@@ -586,6 +609,30 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 12,
     padding: Spacing.MD,
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.Base,
+    color: colors.textDark,
+  },
+  inputError: {
+    borderColor: colors.danger,
+  },
+  errorText: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.XS,
+    color: colors.danger,
+    marginTop: Spacing.XS,
+  },
+  datePickerButton: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: Spacing.MD,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  datePickerText: {
     fontFamily: "Poppins-Regular",
     fontSize: FontSizes.Base,
     color: colors.textDark,
@@ -607,8 +654,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   activeChip: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
   chipText: {
     fontFamily: "Poppins-Medium",
@@ -619,7 +666,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   submitButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     paddingVertical: Spacing.MD,
     borderRadius: 12,
     alignItems: "center",
@@ -637,8 +684,8 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   personCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: Spacing.MD,
     backgroundColor: colors.card,
     borderRadius: 12,
@@ -652,8 +699,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   personInfo: {
     flex: 1,

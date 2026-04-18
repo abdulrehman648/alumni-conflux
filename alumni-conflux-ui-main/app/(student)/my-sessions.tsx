@@ -7,9 +7,9 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { FontSizes, Spacing } from "../../constants/theme";
+import NestedScreenHeader from "../../src/components/NestedScreenHeader";
 import { useAuth } from "../../src/context/AuthContext";
 import { mentorshipService } from "../../src/services/api";
 import colors from "../../src/theme/colors";
@@ -67,16 +67,10 @@ export default function MySessions() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ChevronLeft size={18} color={colors.textDark} strokeWidth={2.5} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Mentorship Requests</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <NestedScreenHeader
+        title="My Mentorship Requests"
+        onBack={() => router.back()}
+      />
 
       {loading ? (
         <View style={styles.center}>
@@ -119,32 +113,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     paddingHorizontal: Spacing.LG,
-  },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingTop: Spacing.MD,
-    paddingBottom: Spacing.MD,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  headerSpacer: {
-    width: 36,
-    height: 36,
-  },
-  headerTitle: {
-    flex: 1,
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.LG,
-    fontWeight: "600",
-    color: colors.textDark,
-    textAlign: "center",
   },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   empty: {

@@ -50,6 +50,7 @@ public class MentorshipServiceImpl implements MentorshipService {
     public List<MentorshipResponse> getAvailableMentors() {
         return alumniRepository.findByIsAvailableForMentorshipTrue()
                 .stream()
+                .filter(this::isAlumniMentorReady)
                 .map(this::mapToMentorshipResponse)
                 .collect(Collectors.toList());
     }
@@ -61,6 +62,7 @@ public class MentorshipServiceImpl implements MentorshipService {
 
         return alumniRepository.findByIsAvailableForMentorshipTrue()
             .stream()
+            .filter(this::isAlumniMentorReady)
             .map(alumni -> buildRecommendation(student, alumni))
             .sorted(Comparator.comparingInt((MentorshipResponse mentor) -> mentor.getMatchScore() != null ? mentor.getMatchScore() : 0)
                 .reversed()
@@ -78,6 +80,11 @@ public class MentorshipServiceImpl implements MentorshipService {
         }
 
         Alumni alumni = user.getAlumni();
+
+        if (isAvailable && !isAlumniMentorReady(alumni)) {
+            throw new RuntimeException("Complete alumni details and mentor readiness before enabling mentorship");
+        }
+
         alumni.setAvailableForMentorship(isAvailable);
         alumniRepository.save(alumni);
     }
@@ -222,6 +229,32 @@ public class MentorshipServiceImpl implements MentorshipService {
                 .filter(value -> value != null && !value.trim().isEmpty())
                 .map(value -> value.trim().toLowerCase(Locale.ROOT))
                 .collect(Collectors.toList());
+    }
+
+    private boolean isAlumniMentorReady(Alumni alumni) {
+        if (alumni == null || alumni.getDetails() == null) {
+            return false;
+        }
+
+        return hasText(alumni.getInstitutionName())
+                && alumni.getGraduationYear() != null
+                && hasText(alumni.getIndustry())
+                && hasText(alumni.getCurrentCompany())
+                && hasText(alumni.getDetails().getJobTitle())
+                && hasText(alumni.getDetails().getExperienceLevel())
+                && hasValues(alumni.getDetails().getSkills());
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private boolean hasValues(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return false;
+        }
+
+        return values.stream().anyMatch(this::hasText);
     }
 
     private Set<String> intersection(List<String> left, List<String> right) {

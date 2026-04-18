@@ -1,41 +1,52 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Stack, useRouter } from "expo-router";
-import { TouchableOpacity } from "react-native";
-import { useAuth } from "../../src/context/AuthContext";
+import { Tabs } from "expo-router";
+import { Briefcase, Calendar, Heart, House, User } from "lucide-react-native";
+import BottomTabNavigator, {
+  createTabBarIcon,
+  hiddenTabScreenOptions,
+} from "../../src/components/BottomTabNavigator";
 
 export default function AlumniLayout() {
-  const router = useRouter();
-  const { profileComplete } = useAuth();
-
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: "#0F4C4F" },
-        headerTintColor: "#F4EAD8",
-        headerShown: true,
-        headerShadowVisible: false,
-        contentStyle: { backgroundColor: "#fff" },
-        headerRight: () => (
-          <TouchableOpacity
-            onPress={() => router.push("/(alumni)/profile")}
-            style={{ marginRight: 15 }}
-          >
-            <Ionicons name="person-circle-outline" size={28} color="#F4EAD8" />
-          </TouchableOpacity>
-        ),
-      }}
-    >
-      <Stack.Screen
+    <BottomTabNavigator>
+      <Tabs.Screen
         name="index"
-        options={{ title: "Home", headerShown: false }}
+        options={{
+          title: "Home",
+          tabBarIcon: createTabBarIcon(House),
+        }}
       />
-      <Stack.Screen name="profile" options={{ title: "Profile" }} />
-      <Stack.Screen name="availability" options={{ title: "Availability" }} />
-      <Stack.Screen name="requests" options={{ title: "Requests" }} />
-      <Stack.Screen name="events" options={{ title: "Events" }} />
-      <Stack.Screen name="jobs" options={{ title: "Jobs" }} />
-      <Stack.Screen name="history" options={{ title: "History" }} />
-      <Stack.Screen name="donations" options={{ title: "Donations", headerShown: false }} />
-    </Stack>
+      <Tabs.Screen name="requests" options={hiddenTabScreenOptions} />
+      <Tabs.Screen
+        name="events"
+        options={{
+          title: "Events",
+          tabBarIcon: createTabBarIcon(Calendar),
+        }}
+      />
+      <Tabs.Screen
+        name="jobs"
+        options={{
+          title: "Jobs",
+          tabBarIcon: createTabBarIcon(Briefcase),
+        }}
+      />
+      <Tabs.Screen
+        name="donations"
+        options={{
+          title: "Donations",
+          tabBarIcon: createTabBarIcon(Heart),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: createTabBarIcon(User),
+        }}
+      />
+      <Tabs.Screen name="availability" options={hiddenTabScreenOptions} />
+      <Tabs.Screen name="history" options={hiddenTabScreenOptions} />
+      <Tabs.Screen name="mentor-assessment" options={hiddenTabScreenOptions} />
+    </BottomTabNavigator>
   );
 }

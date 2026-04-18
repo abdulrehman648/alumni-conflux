@@ -1,5 +1,4 @@
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -12,7 +11,9 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../../constants/theme";
+import NestedScreenHeader from "../../src/components/NestedScreenHeader";
 import { adminService } from "../../src/services/api";
+import colors from "@/src/theme/colors";
 
 type User = {
   id: number;
@@ -57,7 +58,7 @@ export default function Users() {
       "Delete User",
       `Are you sure you want to delete ${user.fullName || user.name}?`,
       [
-        { text: "Cancel", onPress: () => { } },
+        { text: "Cancel", onPress: () => {} },
         {
           text: "Delete",
           onPress: async () => {
@@ -112,21 +113,10 @@ export default function Users() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ChevronLeft size={24} color="#F4EAD8" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>User Management</Text>
-          <Text style={styles.headerSubtitle}>
-            Manage all platform users
-          </Text>
-        </View>
-      </View>
+      <NestedScreenHeader
+        title="User Management"
+        onBack={() => router.back()}
+      />
 
       {loading ? (
         <View style={styles.centerContainer}>
@@ -172,18 +162,6 @@ export default function Users() {
           ) : (
             <Text style={styles.emptySectionText}>No alumni found</Text>
           )}
-
-          {admins.length > 0 && (
-            <>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Admins</Text>
-                <View style={styles.countBadge}>
-                  <Text style={styles.countText}>{admins.length}</Text>
-                </View>
-              </View>
-              {admins.map((item) => renderItem({ item }))}
-            </>
-          )}
         </ScrollView>
       )}
     </View>
@@ -193,40 +171,7 @@ export default function Users() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F4EAD8",
-  },
-
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.LG,
-    paddingTop: 50,
-    paddingBottom: Spacing.XL,
-    gap: Spacing.MD,
-    backgroundColor: "#0F4C4F",
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(244, 234, 216, 0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(244, 234, 216, 0.3)",
-  },
-  headerContent: { flex: 1 },
-  headerTitle: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 22,
-    color: "#F4EAD8",
-    fontWeight: "700",
-  },
-  headerSubtitle: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 13,
-    color: "rgba(244, 234, 216, 0.8)",
-    marginTop: 4,
+    backgroundColor: colors.background,
   },
 
   centerContainer: {
@@ -238,7 +183,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 14,
-    color: "#0F4C4F",
+    color: colors.primary,
   },
 
   errorText: {

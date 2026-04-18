@@ -1,12 +1,10 @@
 import { useRouter } from "expo-router";
 import {
   CheckCircle,
-  ChevronLeft,
   Clock,
   ExternalLink,
   Eye,
   Heart,
-  Plus,
   TrendingUp,
   X,
   XCircle,
@@ -25,6 +23,8 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../../constants/theme";
+import FloatingAddButton from "../../src/components/FloatingAddButton";
+import NestedScreenHeader from "../../src/components/NestedScreenHeader";
 import { useAuth } from "../../src/context/AuthContext";
 import {
   Campaign,
@@ -180,27 +180,11 @@ export default function AdminDonationsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ChevronLeft size={24} color="#F4EAD8" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Donations & Funds</Text>
-          <Text style={styles.headerSubtitle}>
-            Manage fundraising campaigns
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Plus size={24} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
+      <NestedScreenHeader
+        title="Donations & Funds"
+        subtitle="Manage fundraising campaigns"
+        onBack={() => router.back()}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -281,6 +265,8 @@ export default function AdminDonationsScreen() {
           </View>
         )}
       </ScrollView>
+
+      <FloatingAddButton onPress={() => setModalVisible(true)} />
 
       {/* Create Campaign Modal */}
       <Modal
@@ -539,52 +525,11 @@ export default function AdminDonationsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  scrollContent: {
     padding: Spacing.LG,
-    paddingTop: 50,
-    paddingBottom: Spacing.XL,
-    gap: Spacing.MD,
-    backgroundColor: "#0F4C4F",
+    paddingTop: 20,
+    paddingBottom: Spacing.XXXL + 80,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(244, 234, 216, 0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(244, 234, 216, 0.3)",
-  },
-  headerContent: { flex: 1 },
-  headerTitle: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 22,
-    color: "#F4EAD8",
-    fontWeight: "700",
-  },
-  headerSubtitle: {
-    fontFamily: "Poppins-Regular",
-    fontSize: 13,
-    color: "rgba(244, 234, 216, 0.8)",
-    marginTop: 4,
-  },
-  addButton: {
-    backgroundColor: "#F4EAD8",
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  scrollContent: { padding: Spacing.LG, paddingTop: 20 },
   campaignCard: {
     backgroundColor: colors.white,
     borderRadius: 20,

@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -14,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { FontSizes, Spacing } from "../../constants/theme";
+import NestedScreenHeader from "../../src/components/NestedScreenHeader";
 import { useAuth } from "../../src/context/AuthContext";
 import { aiService } from "../../src/services/api";
 import colors from "../../src/theme/colors";
@@ -189,16 +189,10 @@ export default function AICareerCounselor() {
   return (
     <View style={[styles.outerContainer, { paddingBottom: insets.bottom }]}>
       <View style={[styles.container, { paddingBottom: keyboardHeight }]}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <ChevronLeft size={18} color={colors.textDark} strokeWidth={2.5} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>AI Career Counselor</Text>
-          <View style={styles.headerSpacer} />
-        </View>
+        <NestedScreenHeader
+          title="AI Career Counselor"
+          onBack={() => router.back()}
+        />
 
         <FlatList
           ref={flatListRef}
@@ -255,34 +249,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  header: {
-    backgroundColor: colors.background,
-    paddingHorizontal: Spacing.MD,
-    paddingTop: Spacing.MD,
-    paddingBottom: Spacing.MD,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  headerSpacer: {
-    width: 36,
-    height: 36,
-  },
-  headerTitle: {
-    flex: 1,
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.LG,
-    color: colors.textDark,
-    fontWeight: "600",
-    textAlign: "center",
   },
   chatContainer: {
     padding: Spacing.MD,

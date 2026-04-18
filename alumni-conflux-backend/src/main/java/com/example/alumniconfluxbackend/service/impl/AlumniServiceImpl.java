@@ -94,6 +94,7 @@ public class AlumniServiceImpl implements AlumniService {
     private AlumniResponse mapToResponse(Alumni a) {
 
         AlumniResponse res = new AlumniResponse();
+        AlumniDetails details = a.getDetails();
 
         res.setId(a.getId());
         res.setInstitutionName(a.getInstitutionName());
@@ -101,13 +102,15 @@ public class AlumniServiceImpl implements AlumniService {
         res.setIndustry(a.getIndustry());
         res.setCurrentCompany(a.getCurrentCompany());
 
-        res.setJobTitle(a.getDetails().getJobTitle());
-        res.setExperienceLevel(a.getDetails().getExperienceLevel());
-        res.setSkills(a.getDetails().getSkills());
-        res.setAchievements(a.getDetails().getAchievements());
-        res.setCareerPath(a.getDetails().getCareerPath());
-        res.setCertifications(a.getDetails().getCertifications());
-        res.setAdvice(a.getDetails().getAdvice());
+        if (details != null) {
+            res.setJobTitle(details.getJobTitle());
+            res.setExperienceLevel(details.getExperienceLevel());
+            res.setSkills(details.getSkills());
+            res.setAchievements(details.getAchievements());
+            res.setCareerPath(details.getCareerPath());
+            res.setCertifications(details.getCertifications());
+            res.setAdvice(details.getAdvice());
+        }
 
         if (a.getUser() != null) {
             res.setFullName(a.getUser().getFullName());

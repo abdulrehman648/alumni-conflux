@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ChevronLeft, ChevronRight, Edit, LogOut } from "lucide-react-native";
+import { ChevronRight, Edit, LogOut } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   ScrollView,
@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../../constants/theme";
+import ProfilePage, { ProfileView } from "../../src/components/ProfilePage";
 import RoundedButton from "../../src/components/RoundedButton";
 import { useAuth } from "../../src/context/AuthContext";
 import { apiClient } from "../../src/services/api";
@@ -24,8 +25,6 @@ interface UserProfile {
   role?: string;
   [key: string]: any;
 }
-
-type ProfileView = "overview" | "editPersonal" | "editAcademic";
 
 export default function StudentProfileScreen() {
   const router = useRouter();
@@ -201,43 +200,32 @@ export default function StudentProfileScreen() {
     router.replace("/login");
   };
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Loading profile...</Text>
-      </View>
-    );
-  }
-
-  // Profile Overview Screen
-  if (currentView === "overview" && profile) {
-    return (
-      <View style={styles.container}>
-        <ScrollView
-          style={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.overviewContent}
-        >
-          {/* Profile Card */}
+  return (
+    <ProfilePage
+      currentView={currentView}
+      loading={loading}
+      loadingText="Loading profile..."
+      onViewChange={setCurrentView}
+      personalTitle="Edit Personal Profile"
+      academicTitle="Edit Academic Profile"
+      overviewContent={
+        <>
           <View style={styles.profileCard}>
             <Text style={styles.avatarLabel}>Profile</Text>
 
-            {/* Avatar */}
             <View style={styles.avatarContainer}>
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.avatarPlaceholderText}>
-                  {profile.fullName?.charAt(0).toUpperCase()}
+                  {profile?.fullName?.charAt(0).toUpperCase()}
                 </Text>
               </View>
             </View>
 
-            {/* Profile Info */}
-            <Text style={styles.profileName}>{profile.fullName}</Text>
+            <Text style={styles.profileName}>{profile?.fullName}</Text>
             <Text style={styles.profileRole}>
               {formatRoleToPascalCase(userRole)}
             </Text>
 
-            {/* Menu Items */}
             <View style={styles.menuSection}>
               <TouchableOpacity
                 style={styles.menuItem}
@@ -271,7 +259,6 @@ export default function StudentProfileScreen() {
             </View>
           </View>
 
-          {/* Sign Out Button */}
           <RoundedButton
             title="Sign Out"
             variant="primary"
@@ -280,66 +267,43 @@ export default function StudentProfileScreen() {
             style={styles.signOutButton}
             icon={<LogOut size={18} color={colors.white} strokeWidth={2} />}
           />
-        </ScrollView>
-      </View>
-    );
-  }
+        </>
+      }
+      personalContent={
+        <View style={styles.formSection}>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Full Name</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter your full name"
+              placeholderTextColor={colors.textLight}
+            />
+          </View>
 
-  // Edit Personal Profile Screen
-  if (currentView === "editPersonal") {
-    return (
-      <View style={styles.container}>
-        <View style={styles.headerContainer}>
-          <TouchableOpacity
-            onPress={() => setCurrentView("overview")}
-            style={styles.backButton}
-          >
-            <ChevronLeft size={20} color={colors.primary} strokeWidth={2.5} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Personal Profile</Text>
-          <View style={styles.headerSpacer} />
-        </View>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Username</Text>
+            <TextInput
+              style={styles.input}
+              value={username}
+              onChangeText={setUsername}
+              placeholder="Enter your username"
+              placeholderTextColor={colors.textLight}
+            />
+          </View>
 
-        <ScrollView
-          style={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.editContent}
-        >
-          <View style={styles.formSection}>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Full Name</Text>
-              <TextInput
-                style={styles.input}
-                value={name}
-                onChangeText={setName}
-                placeholder="Enter your full name"
-                placeholderTextColor={colors.textLight}
-              />
-            </View>
-
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Username</Text>
-              <TextInput
-                style={styles.input}
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Enter your username"
-                placeholderTextColor={colors.textLight}
-              />
-            </View>
-
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Email</Text>
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Enter your email"
-                placeholderTextColor={colors.textLight}
-                keyboardType="email-address"
-                editable={false}
-              />
-            </View>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              placeholderTextColor={colors.textLight}
+              keyboardType="email-address"
+              editable={false}
+            />
           </View>
 
           <View>
@@ -352,123 +316,100 @@ export default function StudentProfileScreen() {
               style={styles.saveButton}
             />
           </View>
-        </ScrollView>
-      </View>
-    );
-  }
-
-  // Edit Academic Profile Screen
-  if (currentView === "editAcademic") {
-    return (
-      <View style={styles.container}>
-        <View style={styles.headerContainer}>
-          <TouchableOpacity
-            onPress={() => setCurrentView("overview")}
-            style={styles.backButton}
-          >
-            <ChevronLeft size={20} color={colors.primary} strokeWidth={2.5} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Academic Profile</Text>
-          <View style={styles.headerSpacer} />
         </View>
+      }
+      academicContent={
+        <View style={styles.formSection}>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Institution Name</Text>
+            <TextInput
+              style={styles.input}
+              value={institutionName}
+              onChangeText={setInstitutionName}
+              placeholder="Enter institution name"
+              placeholderTextColor={colors.textLight}
+            />
+          </View>
 
-        <ScrollView
-          style={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.editContent}
-        >
-          <View style={styles.formSection}>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Institution Name</Text>
-              <TextInput
-                style={styles.input}
-                value={institutionName}
-                onChangeText={setInstitutionName}
-                placeholder="Enter institution name"
-                placeholderTextColor={colors.textLight}
-              />
-            </View>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Expected Graduation Year</Text>
+            <TextInput
+              style={styles.input}
+              value={expectedGraduationYear}
+              onChangeText={setExpectedGraduationYear}
+              placeholder="Enter expected graduation year"
+              placeholderTextColor={colors.textLight}
+              keyboardType="number-pad"
+            />
+          </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Expected Graduation Year</Text>
-              <TextInput
-                style={styles.input}
-                value={expectedGraduationYear}
-                onChangeText={setExpectedGraduationYear}
-                placeholder="Enter expected graduation year"
-                placeholderTextColor={colors.textLight}
-                keyboardType="number-pad"
-              />
-            </View>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Department</Text>
+            <TextInput
+              style={styles.input}
+              value={department}
+              onChangeText={setDepartment}
+              placeholder="Enter department"
+              placeholderTextColor={colors.textLight}
+            />
+          </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Department</Text>
-              <TextInput
-                style={styles.input}
-                value={department}
-                onChangeText={setDepartment}
-                placeholder="Enter department"
-                placeholderTextColor={colors.textLight}
-              />
-            </View>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Degree Program</Text>
+            <TextInput
+              style={styles.input}
+              value={degreeProgram}
+              onChangeText={setDegreeProgram}
+              placeholder="Enter degree program"
+              placeholderTextColor={colors.textLight}
+            />
+          </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Degree Program</Text>
-              <TextInput
-                style={styles.input}
-                value={degreeProgram}
-                onChangeText={setDegreeProgram}
-                placeholder="Enter degree program"
-                placeholderTextColor={colors.textLight}
-              />
-            </View>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Major</Text>
+            <TextInput
+              style={styles.input}
+              value={major}
+              onChangeText={setMajor}
+              placeholder="Enter major"
+              placeholderTextColor={colors.textLight}
+            />
+          </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Major</Text>
-              <TextInput
-                style={styles.input}
-                value={major}
-                onChangeText={setMajor}
-                placeholder="Enter major"
-                placeholderTextColor={colors.textLight}
-              />
-            </View>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Current Semester</Text>
+            <TextInput
+              style={styles.input}
+              value={currentSemester}
+              onChangeText={setCurrentSemester}
+              placeholder="Enter current semester"
+              placeholderTextColor={colors.textLight}
+              keyboardType="number-pad"
+            />
+          </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Current Semester</Text>
-              <TextInput
-                style={styles.input}
-                value={currentSemester}
-                onChangeText={setCurrentSemester}
-                placeholder="Enter current semester"
-                placeholderTextColor={colors.textLight}
-                keyboardType="number-pad"
-              />
-            </View>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Skills (comma-separated)</Text>
+            <TextInput
+              style={styles.input}
+              value={skills}
+              onChangeText={setSkills}
+              placeholder="e.g. Java, Spring Boot, SQL"
+              placeholderTextColor={colors.textLight}
+            />
+          </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Skills (comma-separated)</Text>
-              <TextInput
-                style={styles.input}
-                value={skills}
-                onChangeText={setSkills}
-                placeholder="e.g. Java, Spring Boot, SQL"
-                placeholderTextColor={colors.textLight}
-              />
-            </View>
-
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>
-                Career Preferences (comma-separated)
-              </Text>
-              <TextInput
-                style={styles.input}
-                value={careerPreferences}
-                onChangeText={setCareerPreferences}
-                placeholder="e.g. Data Science, Backend Engineering"
-                placeholderTextColor={colors.textLight}
-              />
-            </View>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>
+              Career Preferences (comma-separated)
+            </Text>
+            <TextInput
+              style={styles.input}
+              value={careerPreferences}
+              onChangeText={setCareerPreferences}
+              placeholder="e.g. Data Science, Backend Engineering"
+              placeholderTextColor={colors.textLight}
+            />
           </View>
 
           <View>
@@ -481,12 +422,10 @@ export default function StudentProfileScreen() {
               style={styles.saveButton}
             />
           </View>
-        </ScrollView>
-      </View>
-    );
-  }
-
-  return null;
+        </View>
+      }
+    />
+  );
 }
 
 const styles = StyleSheet.create({
@@ -506,33 +445,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.LG,
     paddingVertical: Spacing.LG,
     paddingBottom: Spacing.XXXL,
-  },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.LG,
-    paddingTop: Spacing.MD,
-    paddingBottom: Spacing.MD,
-    backgroundColor: colors.card,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerSpacer: {
-    width: 36,
-    height: 36,
-  },
-  headerTitle: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.LG,
-    fontWeight: "600",
-    color: colors.textDark,
-    flex: 1,
-    textAlign: "center",
   },
   profileCard: {
     backgroundColor: colors.card,

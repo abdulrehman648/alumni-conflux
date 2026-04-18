@@ -1,35 +1,56 @@
-import { Stack } from "expo-router";
-import colors from "../../src/theme/colors";
+import { Tabs } from "expo-router";
+import { Briefcase, Calendar, House, User, Users } from "lucide-react-native";
+import BottomTabNavigator, {
+  createTabBarIcon,
+  hiddenTabScreenOptions,
+} from "../../src/components/BottomTabNavigator";
 
 export default function StudentLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.white },
-      }}
-    >
-      <Stack.Screen name="index" options={{ title: "Home" }} />
-      <Stack.Screen name="profile" options={{ title: "Profile" }} />
-      <Stack.Screen name="mentors" options={{ title: "Mentors" }} />
-      <Stack.Screen
-        name="mentor-assessment"
-        options={{ title: "Mentor Assessment" }}
-      />
-      <Stack.Screen name="jobs" options={{ title: "Jobs" }} />
-      <Stack.Screen name="events" options={{ title: "Events" }} />
-      <Stack.Screen name="my-sessions" options={{ title: "Book Sessions" }} />
-      <Stack.Screen name="bookings" options={{ title: "Bookings" }} />
-      <Stack.Screen
-        name="mentor-details/[id]"
-        options={{ title: "Mentor Details" }}
-      />
-      <Stack.Screen
-        name="ai-career"
+    <BottomTabNavigator>
+      <Tabs.Screen
+        name="index"
         options={{
-          title: "AI Career Counselor",
+          title: "Home",
+          tabBarIcon: createTabBarIcon(House),
         }}
       />
-    </Stack>
+      <Tabs.Screen
+        name="mentors"
+        options={{
+          title: "Mentors",
+          tabBarIcon: createTabBarIcon(Users),
+        }}
+      />
+      <Tabs.Screen
+        name="jobs"
+        options={{
+          title: "Jobs",
+          tabBarIcon: createTabBarIcon(Briefcase),
+        }}
+      />
+      <Tabs.Screen
+        name="events"
+        options={{
+          title: "Events",
+          tabBarIcon: createTabBarIcon(Calendar),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: createTabBarIcon(User),
+        }}
+      />
+      <Tabs.Screen name="mentor-assessment" options={hiddenTabScreenOptions} />
+      <Tabs.Screen name="my-sessions" options={hiddenTabScreenOptions} />
+      <Tabs.Screen name="bookings" options={hiddenTabScreenOptions} />
+      <Tabs.Screen
+        name="mentor-details/[id]"
+        options={hiddenTabScreenOptions}
+      />
+      <Tabs.Screen name="ai-career" options={hiddenTabScreenOptions} />
+    </BottomTabNavigator>
   );
 }
