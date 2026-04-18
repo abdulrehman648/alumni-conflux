@@ -79,30 +79,32 @@ export default function MySessions() {
       ) : requests.length === 0 ? (
         <Text style={styles.empty}>No mentorship requests sent yet.</Text>
       ) : (
-        <FlatList
-          data={requests}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={styles.name}>{item.mentorName}</Text>
-              <Text style={styles.details}>
-                Status:{" "}
-                <Text
-                  style={{
-                    color: getStatusColor(item.status),
-                    fontWeight: "bold",
-                  }}
-                >
-                  {item.status}
+        <View style={{ paddingHorizontal: 16 }}>
+          <FlatList
+            data={requests}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <Text style={styles.name}>{item.mentorName}</Text>
+                <Text style={styles.details}>
+                  Status:{" "}
+                  <Text
+                    style={{
+                      color: getStatusColor(item.status),
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {item.status}
+                  </Text>
                 </Text>
-              </Text>
-              <Text style={styles.details}>Message: {item.message}</Text>
-              <Text style={styles.date}>
-                Requested on: {new Date(item.createdAt).toLocaleDateString()}
-              </Text>
-            </View>
-          )}
-        />
+                <Text style={styles.details}>Message: {item.message}</Text>
+                <Text style={styles.date}>
+                  Requested on: {new Date(item.createdAt).toLocaleDateString()}
+                </Text>
+              </View>
+            )}
+          />
+        </View>
       )}
     </View>
   );
@@ -112,7 +114,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingHorizontal: Spacing.LG,
   },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   empty: {

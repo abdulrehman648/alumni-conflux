@@ -282,7 +282,7 @@ export default function MentorsScreen() {
               Your top mentor matches
             </Text>
             <Text style={styles.recommendationSubtitle}>
-              Ranked from your completed tests and student profile.
+              Ranked from your completed tests and profile.
             </Text>
           </View>
           <TouchableOpacity
@@ -336,7 +336,7 @@ export default function MentorsScreen() {
           </View>
         )}
 
-      {canAccessMentors ? (
+      {canAccessMentors && recommendedMentors.length === 0 ? (
         <View style={styles.lockedMentorsState}>
           <MessageSquare size={48} color={colors.textLight} strokeWidth={1} />
           <Text style={styles.emptyStateText}>No AI suggestions yet</Text>
@@ -353,7 +353,7 @@ export default function MentorsScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      ) : (
+      ) : !canAccessMentors ? (
         <View style={styles.lockedMentorsState}>
           <MessageSquare size={48} color={colors.textLight} strokeWidth={1} />
           <Text style={styles.emptyStateText}>Mentor list is locked</Text>
@@ -376,7 +376,7 @@ export default function MentorsScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 14,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   },
 
   mentorTextBlock: {
-    gap: Spacing.XS,
+    gap: 0,
   },
 
   mentorName: {
@@ -476,13 +476,12 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.XS,
     fontWeight: "400",
     color: colors.textLight,
-    marginTop: Spacing.XS,
   },
 
   skillsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.XS,
+    gap: Spacing.HUGE,
     marginTop: Spacing.SM,
   },
 
@@ -564,7 +563,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.LG,
     padding: Spacing.MD,
     borderRadius: 16,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.MD,
@@ -695,7 +694,6 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.XS,
     fontWeight: "400",
     color: colors.textLight,
-    marginTop: Spacing.XS,
   },
 
   recommendationsList: {

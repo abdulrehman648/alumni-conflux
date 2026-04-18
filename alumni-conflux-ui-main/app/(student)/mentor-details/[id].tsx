@@ -7,7 +7,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -18,7 +18,6 @@ import colors from "../../../src/theme/colors";
 import Toast from "react-native-toast-message";
 
 export default function MentorDetails() {
-
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { userId } = useAuth();
@@ -28,17 +27,21 @@ export default function MentorDetails() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-     fetchMentorDetails();
+    fetchMentorDetails();
   }, [id]);
 
   const fetchMentorDetails = async () => {
     try {
       setLoading(true);
       const mentors = await mentorshipService.getAvailableMentors();
-      const found = mentors.find(m => m.alumniId === Number(id));
+      const found = mentors.find((m) => m.alumniId === Number(id));
       setMentor(found);
     } catch {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to fetch mentor details' });
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to fetch mentor details",
+      });
     } finally {
       setLoading(false);
     }
@@ -48,39 +51,54 @@ export default function MentorDetails() {
     if (!userId) return;
     setSubmitting(true);
     try {
-      await mentorshipService.requestMentorship(Number(userId), Number(id), message);
-      Toast.show({ type: 'success', text1: 'Request Sent', text2: 'Mentor will be notified' });
+      await mentorshipService.requestMentorship(
+        Number(userId),
+        Number(id),
+        message,
+      );
+      Toast.show({
+        type: "success",
+        text1: "Request Sent",
+        text2: "Mentor will be notified",
+      });
       router.back();
     } catch (error: any) {
-      Toast.show({ 
-        type: 'error', 
-        text1: 'Request Failed', 
-        text2: error.response?.data?.message || 'Could not send request' 
+      Toast.show({
+        type: "error",
+        text1: "Request Failed",
+        text2: error.response?.data?.message || "Could not send request",
       });
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) return <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
-  if (!mentor) return <View style={styles.center}><Text>Mentor not found</Text></View>;
+  if (loading)
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  if (!mentor)
+    return (
+      <View style={styles.center}>
+        <Text>Mentor not found</Text>
+      </View>
+    );
 
   return (
-
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-
       <ScrollView
         style={styles.container}
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-
         <View style={styles.avatarContainer}>
-           <Text style={styles.avatarLetter}>{mentor.name.charAt(0)}</Text>
+          <Text style={styles.avatarLetter}>{mentor.name.charAt(0)}</Text>
         </View>
 
         <Text style={styles.name}>{mentor.name}</Text>
@@ -97,7 +115,7 @@ export default function MentorDetails() {
             multiline
             numberOfLines={4}
           />
-          
+
           <TouchableOpacity
             style={[styles.bookButton, submitting && { opacity: 0.7 }]}
             disabled={submitting}
@@ -110,26 +128,23 @@ export default function MentorDetails() {
             )}
           </TouchableOpacity>
         </View>
-
       </ScrollView>
-
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 20
+    padding: 20,
   },
 
   center: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: colors.background,
   },
 
   avatarContainer: {
@@ -138,11 +153,11 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     backgroundColor: colors.primary,
     alignSelf: "center",
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 20,
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -151,29 +166,29 @@ const styles = StyleSheet.create({
   avatarLetter: {
     color: colors.white,
     fontSize: 48,
-    fontFamily: 'Poppins-Bold',
-    fontWeight: 'bold'
+    fontFamily: "Poppins-Bold",
+    fontWeight: "bold",
   },
 
   name: {
     fontSize: 24,
     fontWeight: "bold",
-    textAlign: "center"
+    textAlign: "center",
   },
 
   role: {
     textAlign: "center",
-    marginBottom: 10
+    marginBottom: 10,
   },
 
   skills: {
     textAlign: "center",
     color: colors.primary,
-    marginBottom: 20
+    marginBottom: 20,
   },
 
   requestSection: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     padding: 20,
     borderRadius: 12,
     marginTop: 20,
@@ -184,15 +199,15 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
     fontWeight: "bold",
-    fontFamily: 'Poppins-SemiBold'
+    fontFamily: "Poppins-SemiBold",
   },
 
   bookButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     padding: 14,
     borderRadius: 10,
     alignItems: "center",
-    marginTop: 20
+    marginTop: 20,
   },
 
   input: {
@@ -203,13 +218,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     minHeight: 100,
-    textAlignVertical: 'top'
+    textAlignVertical: "top",
   },
 
   heading: {
     fontSize: 16,
-    fontFamily: 'Poppins-SemiBold',
+    fontFamily: "Poppins-SemiBold",
     color: colors.textDark,
-    marginBottom: 5
+    marginBottom: 5,
   },
 });

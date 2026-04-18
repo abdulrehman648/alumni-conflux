@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ChevronRight,
   Edit,
@@ -39,6 +39,7 @@ interface AlumniProfile {
 
 export default function AlumniProfileScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ view?: string }>();
   const { userId, userRole, fullName, logout } = useAuth();
   const [profile, setProfile] = useState<AlumniProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,6 +61,13 @@ export default function AlumniProfileScreen() {
     if (!userId) return;
     fetchProfile();
   }, [userId]);
+
+  useEffect(() => {
+    const requestedView = params.view;
+    if (requestedView === "editAcademic") {
+      setCurrentView("editAcademic");
+    }
+  }, [params.view]);
 
   const buildFallbackProfile = (): AlumniProfile => ({
     fullName: fullName || "Alumni",
@@ -143,12 +151,6 @@ export default function AlumniProfileScreen() {
       });
       await fetchProfile();
       setCurrentView("overview");
-      Toast.show({
-        type: "success",
-        text1: "Profile Updated",
-        text2: "Your changes have been saved",
-        topOffset: 50,
-      });
     } catch (error: any) {
       console.error("Error updating profile:", error);
       Toast.show({
@@ -216,7 +218,7 @@ export default function AlumniProfileScreen() {
       loadingText="Loading profile..."
       onViewChange={setCurrentView}
       personalTitle="Personal Profile"
-      academicTitle="Academic Profile"
+      academicTitle="Professional Profile"
       overviewContent={
         <>
           <View style={styles.profileCard}>
@@ -261,7 +263,7 @@ export default function AlumniProfileScreen() {
                 <View style={styles.menuIconContainer}>
                   <Edit size={20} color={colors.white} strokeWidth={2} />
                 </View>
-                <Text style={styles.menuItemText}>Academic Profile</Text>
+                <Text style={styles.menuItemText}>Professional Profile</Text>
                 <ChevronRight
                   size={20}
                   color={colors.textLight}

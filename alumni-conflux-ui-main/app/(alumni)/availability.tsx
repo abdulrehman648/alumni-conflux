@@ -25,26 +25,26 @@ export default function Availability() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
+  const hasText = (value: unknown) =>
+    typeof value === "string" && value.trim().length > 0;
+  const hasList = (value: unknown) =>
+    Array.isArray(value) && value.some((item) => hasText(item));
+
+  const isMentorProfileReady = (profile: any) =>
+    hasText(profile?.institutionName) &&
+    (profile?.graduationYear != null || hasText(profile?.graduationYear)) &&
+    hasText(profile?.industry) &&
+    hasText(profile?.currentCompany) &&
+    hasText(profile?.jobTitle) &&
+    hasText(profile?.experienceLevel) &&
+    hasList(profile?.skills);
+
   useEffect(() => {
     fetchCurrentStatus();
   }, [userId]);
 
   const fetchCurrentStatus = async () => {
     if (!userId) return;
-
-    const hasText = (value: unknown) =>
-      typeof value === "string" && value.trim().length > 0;
-    const hasList = (value: unknown) =>
-      Array.isArray(value) && value.some((item) => hasText(item));
-
-    const isMentorProfileReady = (profile: any) =>
-      hasText(profile?.institutionName) &&
-      (profile?.graduationYear != null || hasText(profile?.graduationYear)) &&
-      hasText(profile?.industry) &&
-      hasText(profile?.currentCompany) &&
-      hasText(profile?.jobTitle) &&
-      hasText(profile?.experienceLevel) &&
-      hasList(profile?.skills);
 
     try {
       const [profile, assessmentState] = await Promise.all([
@@ -63,33 +63,67 @@ export default function Availability() {
     }
   };
 
+  const getLatestPrerequisites = async () => {
+    if (!userId) {
+      return { profileReady: false, assessmentReady: false };
+    }
+
+    const [profile, assessmentState] = await Promise.all([
+      profileService.getAlumniProfile(parseInt(userId)),
+      loadMentorAssessmentState(userId),
+    ]);
+
+    const profileReady = isMentorProfileReady(profile);
+    const assessmentReady = Boolean(assessmentState?.completed);
+
+    setHasRequiredDetails(profileReady);
+    setHasCompletedAssessment(assessmentReady);
+
+    return { profileReady, assessmentReady };
+  };
+
   const toggleAvailability = async (value: boolean) => {
     if (!userId) return;
 
-    if (value && !hasRequiredDetails) {
+    let profileReady = hasRequiredDetails;
+    let assessmentReady = hasCompletedAssessment;
+
+    if (value) {
+      try {
+        const latest = await getLatestPrerequisites();
+        profileReady = latest.profileReady;
+        assessmentReady = latest.assessmentReady;
+      } catch (error) {
+        console.error("Failed to refresh mentorship prerequisites:", error);
+      }
+    }
+
+    if (value && !profileReady) {
       Alert.alert(
-        "Complete mentor details",
-        "Add your alumni profile details from My Profile before enabling mentorship.",
+        "Complete your profile",
+        "Complete your professional profile from Profile before enabling mentorship.",
         [
           { text: "Cancel", style: "cancel" },
           {
-            text: "Go to My Profile",
-            onPress: () => router.push("/(alumni)/profile" as any),
+            text: "Go to Profile",
+            onPress: () =>
+              router.push("/(alumni)/profile?view=editAcademic" as any),
           },
         ],
       );
       return;
     }
 
-    if (value && !hasCompletedAssessment) {
+    if (value && !assessmentReady) {
       Alert.alert(
-        "Complete mentor assessment",
-        "Finish the mentor assessment from My Profile before enabling mentorship.",
+        "Complete your assessment",
+        "Finish the assessments from My Profile to start mentorship.",
         [
           { text: "Cancel", style: "cancel" },
           {
-            text: "Go to My Profile",
-            onPress: () => router.push("/(alumni)/profile" as any),
+            text: "Go to Assessment",
+            onPress: () =>
+              router.push("/(alumni)/profile?view=editAssessment" as any),
           },
         ],
       );
@@ -239,18 +273,25 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   guidelineRow: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: "#e0e0e0",
+    borderLeftWidth: 3,
+    borderLeftColor: colors.secondary,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     marginBottom: 12,
   },
   guidelineHeading: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: colors.textDark,
-    marginBottom: 2,
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.secondary,
+    marginBottom: 4,
   },
   guidelineText: {
-    fontSize: 14,
-    color: colors.textDark,
+    fontSize: 13,
+    color: "#666",
     lineHeight: 20,
-    textAlign: "justify",
   },
 });
