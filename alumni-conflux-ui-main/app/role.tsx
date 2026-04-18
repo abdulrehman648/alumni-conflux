@@ -18,7 +18,7 @@ export default function RoleScreen() {
     {
       id: "student",
       title: "Student",
-      description: "Find mentors & get career guidance",
+      description: "Find mentors & guidance",
       icon: "school",
       role: "STUDENT",
       onPress: () => router.push("/login?role=STUDENT"),
@@ -53,7 +53,6 @@ export default function RoleScreen() {
     >
       <AuthHeader
         title="Choose Your Role"
-        subtitle="Create a connection that matters"
         illustration={require("../assets/illustrations/select-role.png")}
       />
 
@@ -114,8 +113,8 @@ const styles = StyleSheet.create({
   roleButton: {
     backgroundColor: colors.white,
     borderRadius: 16,
-    padding: Spacing.XL,
-    marginBottom: Spacing.LG,
+    padding: Spacing.LG,
+    marginBottom: Spacing.SM,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -147,7 +146,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: colors.textDark,
-    marginBottom: Spacing.XS,
   },
   roleDescription: {
     fontFamily: "Poppins-Regular",

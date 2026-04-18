@@ -173,8 +173,6 @@ export default function JobsScreen() {
           </View>
         ) : filteredJobs.length > 0 ? (
           filteredJobs.map((job) => {
-            const isApplied = appliedJobs.includes(job.id);
-
             return (
               <View key={job.id} style={styles.jobCard}>
                 {/* Job Header */}

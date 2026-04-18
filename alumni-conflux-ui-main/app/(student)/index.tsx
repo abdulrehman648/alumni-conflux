@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import {
-  Award,
   BookOpen,
+  Bot,
   Briefcase,
   Calendar,
   ChevronRight,
@@ -107,7 +107,7 @@ export default function StudentHome() {
     {
       title: "Career Guidance",
       description: "Get AI-powered career insights",
-      icon: Award,
+      icon: Bot,
       route: "/(student)/ai-career",
     },
     {
@@ -132,6 +132,7 @@ export default function StudentHome() {
             <User size={20} color={colors.textDark} strokeWidth={2.2} />
           </View>
           <Text style={styles.headerTitle}>{fullName}</Text>
+          <Text style={styles.headerSubtitle}>Student</Text>
         </View>
       </View>
 
@@ -140,11 +141,6 @@ export default function StudentHome() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Welcome Section */}
-        <View style={styles.welcomeSection}>
-          <View style={styles.welcomeContent}></View>
-        </View>
-
         {/* Stats Section */}
         <View style={styles.statsContainer}>
           {stats.map((stat, index) => {
@@ -223,9 +219,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: Spacing.LG,
-    paddingTop: Spacing.MD,
-    paddingBottom: Spacing.MD,
-    backgroundColor: colors.background,
+    paddingTop: Spacing.SM,
+    paddingBottom: Spacing.SM,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
   },
 
   headerProfileRow: {
@@ -251,26 +248,11 @@ const styles = StyleSheet.create({
     textAlign: "left",
   },
 
-  welcomeSection: {
-    marginBottom: Spacing.XXL,
-  },
-
-  welcomeContent: {
-    gap: Spacing.SM,
-  },
-
-  welcomeText: {
-    fontFamily: "Poppins-Medium",
-    fontSize: FontSizes.Base,
-    fontWeight: "500",
+  headerSubtitle: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.SM,
+    fontWeight: "400",
     color: colors.textLight,
-  },
-
-  name: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.XL,
-    fontWeight: "600",
-    color: colors.primary,
   },
 
   statsContainer: {
@@ -278,6 +260,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: Spacing.XL,
     gap: Spacing.MD,
+    paddingTop: Spacing.SM,
   },
 
   statCard: {
@@ -287,6 +270,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
   },
 
   statIconContainer: {
@@ -330,7 +317,6 @@ const styles = StyleSheet.create({
   },
 
   actionsContainer: {
-    marginBottom: Spacing.XXXL,
     gap: Spacing.MD,
   },
 
@@ -341,6 +327,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
 
   actionLeft: {
@@ -353,9 +344,10 @@ const styles = StyleSheet.create({
   actionIconContainer: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: colors.primary,
   },
 
   actionTextContainer: {
@@ -371,7 +363,7 @@ const styles = StyleSheet.create({
 
   actionText: {
     fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.XS,
+    fontSize: FontSizes.SM,
     fontWeight: "400",
     color: colors.textLight,
   },

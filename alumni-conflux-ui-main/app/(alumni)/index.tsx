@@ -93,7 +93,6 @@ export default function AlumniHome() {
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.welcomeSection}>
           <View style={styles.welcomeContent}>
-            <Text style={styles.welcomeText}>Welcome Back</Text>
             <Text style={styles.name}>{fullName || "Alumni"}</Text>
           </View>
           <TouchableOpacity

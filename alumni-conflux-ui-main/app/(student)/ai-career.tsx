@@ -3,9 +3,9 @@ import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
+  Animated,
   FlatList,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   StyleSheet,
   Text,
@@ -17,11 +17,68 @@ import { FontSizes, Spacing } from "../../constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { aiService } from "../../src/services/api";
 import colors from "../../src/theme/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface Message {
   id: string;
   text: string;
   sender: "user" | "ai";
+}
+
+function TypingIndicator() {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animate = (dot: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start();
+
+    animate(dot1, 0);
+    animate(dot2, 200);
+    animate(dot3, 400);
+  }, []);
+
+  const dotStyle = (dot: Animated.Value) => ({
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.textLight,
+    marginHorizontal: 2,
+    opacity: dot,
+    transform: [
+      {
+        translateY: dot.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, -4],
+        }),
+      },
+    ],
+  });
+
+  return (
+    <View
+      style={{ flexDirection: "row", alignItems: "center", paddingVertical: 4 }}
+    >
+      <Animated.View style={dotStyle(dot1)} />
+      <Animated.View style={dotStyle(dot2)} />
+      <Animated.View style={dotStyle(dot3)} />
+    </View>
+  );
 }
 
 export default function AICareerCounselor() {
@@ -37,6 +94,23 @@ export default function AICareerCounselor() {
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const insets = useSafeAreaInsets();
+
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hide = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (flatListRef.current) {
@@ -65,7 +139,6 @@ export default function AICareerCounselor() {
         throw new Error("User not authenticated.");
       }
 
-      // We call the career advice endpoint
       const response = await aiService.getCareerAdvice(
         Number(userId),
         userMessage.text,
@@ -102,16 +175,6 @@ export default function AICareerCounselor() {
         item.sender === "user" ? styles.userBubble : styles.aiBubble,
       ]}
     >
-      <View style={styles.bubbleHeader}>
-        <Ionicons
-          name={item.sender === "user" ? "person-circle" : "sparkles"}
-          size={18}
-          color={item.sender === "user" ? colors.primary : colors.secondary}
-        />
-        <Text style={styles.senderName}>
-          {item.sender === "user" ? "You" : "AI Counselor"}
-        </Text>
-      </View>
       <Text
         style={[
           styles.messageText,
@@ -124,12 +187,8 @@ export default function AICareerCounselor() {
   );
 
   return (
-    <View style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-      >
+    <View style={[styles.outerContainer, { paddingBottom: insets.bottom }]}>
+      <View style={[styles.container, { paddingBottom: keyboardHeight }]}>
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -148,19 +207,28 @@ export default function AICareerCounselor() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.chatContainer}
           showsVerticalScrollIndicator={false}
+          maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+          ListFooterComponent={
+            loading ? (
+              <View style={[styles.messageBubble, styles.aiBubble]}>
+                <View style={styles.bubbleHeader}>
+                  <Ionicons
+                    name="sparkles"
+                    size={18}
+                    color={colors.secondary}
+                  />
+                  <Text style={styles.senderName}>AI Counselor</Text>
+                </View>
+                <TypingIndicator />
+              </View>
+            ) : null
+          }
         />
-
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={colors.primary} />
-            <Text style={styles.loadingText}>The AI is thinking...</Text>
-          </View>
-        )}
 
         <View style={styles.inputArea}>
           <TextInput
             style={styles.input}
-            placeholder="Ask about career paths, skills, or alumni..."
+            placeholder="Ask about career paths, skills"
             value={inputText}
             onChangeText={setInputText}
             multiline
@@ -178,7 +246,7 @@ export default function AICareerCounselor() {
             <Ionicons name="send" size={20} color={colors.white} />
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </View>
   );
 }
@@ -186,10 +254,10 @@ export default function AICareerCounselor() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.background,
     paddingHorizontal: Spacing.MD,
     paddingTop: Spacing.MD,
     paddingBottom: Spacing.MD,
@@ -226,21 +294,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: Spacing.MD,
     elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
   },
   userBubble: {
     alignSelf: "flex-end",
     backgroundColor: colors.white,
     borderBottomRightRadius: 4,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
   },
   aiBubble: {
     alignSelf: "flex-start",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.white,
     borderBottomLeftRadius: 4,
   },
   bubbleHeader: {
@@ -297,16 +359,8 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     backgroundColor: colors.textLight,
   },
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.SM,
-    gap: 8,
-  },
-  loadingText: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.XS,
-    color: colors.textLight,
+  outerContainer: {
+    flex: 1,
+    backgroundColor: colors.white,
   },
 });

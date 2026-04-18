@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Eye, EyeOff } from "lucide-react-native";
-import { useState } from "react";
+import { StatusBar } from "expo-status-bar";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react-native";
+import { useRef, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -9,9 +10,10 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  Image,
+  ImageBackground,
 } from "react-native";
 import { FontSizes, Spacing } from "../constants/theme";
-import AuthCard from "../src/components/AuthCard";
 import AuthHeader from "../src/components/AuthHeader";
 import RoundedButton from "../src/components/RoundedButton";
 import { useAuth } from "../src/context/AuthContext";
@@ -26,13 +28,12 @@ export default function Login() {
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{
-    emailOrUsername?: string;
-    password?: string;
-  }>({});
+  const [focusedField, setFocusedField] = useState<
+    "emailOrUsername" | "password" | null
+  >(null);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   const normalizeRole = (role?: string | null) =>
     (role || "")
@@ -41,20 +42,20 @@ export default function Login() {
       .trim();
 
   const validateForm = () => {
-    const newErrors: typeof errors = {};
-
     if (!emailOrUsername.trim()) {
-      newErrors.emailOrUsername = "Email or username is required";
+      emailRef.current?.focus();
+      return false;
     }
 
     if (!password.trim()) {
-      newErrors.password = "Password is required";
+      passwordRef.current?.focus();
+      return false;
     } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      passwordRef.current?.focus();
+      return false;
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return true;
   };
 
   const handleLogin = async () => {
@@ -125,14 +126,7 @@ export default function Login() {
         error?.code === "ECONNABORTED" ||
         (typeof error?.message === "string" &&
           error.message.toLowerCase().includes("timeout"));
-      const isNetworkError =
-        !error?.response &&
-        typeof error?.message === "string" &&
-        error.message.toLowerCase().includes("network error");
       const rawErrorMessage =
-        (isNetworkError
-          ? "Unable to connect to server. Check that backend is running and API URL is correct."
-          : null) ||
         (isTimeout ? "Request timed out. Please try again." : null) ||
         errorData?.message ||
         errorData?.error ||
@@ -157,67 +151,67 @@ export default function Login() {
 
   return (
     <>
-      <View style={styles.container}>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <ImageBackground
+        source={require("../assets/images/background.jpeg")}
+        style={styles.container}
+        resizeMode="cover"
+      >
         <ScrollView
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <AuthHeader title="Welcome Back" subtitle="Sign in to continue" />
+          <Image
+            source={require("../assets/images/alumni-conflux-logo.jpeg")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
 
-          <AuthCard>
-            <View style={styles.floatingLabelContainer}>
-              <Text
+          <View style={styles.formSection}>
+            <View style={styles.inputContainer}>
+              <View
                 style={[
-                  styles.floatingLabel,
-                  (emailFocused || emailOrUsername.length > 0) &&
-                    styles.floatingLabelActive,
+                  styles.iconInputContainer,
+                  focusedField === "emailOrUsername" &&
+                    styles.iconInputContainerFocused,
                 ]}
               >
-                Email or Username
-              </Text>
-              <TextInput
-                style={[styles.textInput, styles.inputWithFloatingLabel]}
-                value={emailOrUsername}
-                onChangeText={(text) => {
-                  setEmailOrUsername(text);
-                  if (errors.emailOrUsername) {
-                    setErrors({ ...errors, emailOrUsername: undefined });
-                  }
-                }}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
-                editable={!loading}
-              />
-            </View>
-            {errors.emailOrUsername && (
-              <Text style={styles.errorText}>{errors.emailOrUsername}</Text>
-            )}
-
-            <View style={styles.floatingLabelContainer}>
-              <Text
-                style={[
-                  styles.floatingLabel,
-                  (passwordFocused || password.length > 0) &&
-                    styles.floatingLabelActive,
-                ]}
-              >
-                Password
-              </Text>
-              <View style={styles.passwordContainer}>
+                <Mail size={20} color={colors.primary} strokeWidth={2} />
                 <TextInput
-                  style={styles.passwordInput}
+                  ref={emailRef}
+                  style={styles.iconTextInput}
+                  value={emailOrUsername}
+                  onChangeText={setEmailOrUsername}
+                  onFocus={() => setFocusedField("emailOrUsername")}
+                  onBlur={() => setFocusedField(null)}
+                  editable={!loading}
+                  placeholder="Email or Username"
+                  placeholderTextColor={colors.textLight}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <View
+                style={[
+                  styles.iconInputContainer,
+                  focusedField === "password" &&
+                    styles.iconInputContainerFocused,
+                ]}
+              >
+                <Lock size={20} color={colors.primary} strokeWidth={2} />
+                <TextInput
+                  ref={passwordRef}
+                  style={styles.iconPasswordInput}
                   value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    if (errors.password) {
-                      setErrors({ ...errors, password: undefined });
-                    }
-                  }}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
+                  onChangeText={setPassword}
+                  onFocus={() => setFocusedField("password")}
+                  onBlur={() => setFocusedField(null)}
                   secureTextEntry={!showPassword}
                   editable={!loading}
+                  placeholder="Password"
+                  placeholderTextColor={colors.textLight}
                 />
                 {password.length > 0 && (
                   <TouchableOpacity
@@ -234,50 +228,39 @@ export default function Login() {
                 )}
               </View>
             </View>
-            {errors.password && (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            )}
+
+            <RoundedButton
+              title="Login"
+              onPress={handleLogin}
+              variant="primary"
+              size="small"
+              loading={loading}
+              style={styles.loginButton}
+            />
 
             <TouchableOpacity
               style={styles.forgotContainer}
               onPress={() => router.push("/forgot-password")}
             >
-              <Text style={styles.forgotText}>Forgot Password?</Text>
+              <Text style={styles.forgotText}>Forgotten Password?</Text>
             </TouchableOpacity>
-          </AuthCard>
+          </View>
 
-          <RoundedButton
-            title="Sign In"
-            onPress={handleLogin}
-            variant="primary"
-            size="large"
-            loading={loading}
-            style={styles.loginButton}
-          />
+          <View style={styles.footerSpacer} />
 
           {selectedRole !== "ADMIN" && (
-            <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>
-                Don&apos;t have an account?{" "}
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  router.push(`/signup?role=${selectedRole || "STUDENT"}`)
-                }
-              >
-                <Text style={styles.signupLink}>Sign Up</Text>
-              </TouchableOpacity>
-            </View>
+            <RoundedButton
+              title="Create Account"
+              onPress={() =>
+                router.push(`/signup?role=${selectedRole || "STUDENT"}`)
+              }
+              variant="outline"
+              size="small"
+              style={styles.createAccountButton}
+            />
           )}
-
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.replace("/role")}
-          >
-            <Text style={styles.backButtonText}>Back to Role Selection</Text>
-          </TouchableOpacity>
         </ScrollView>
-      </View>
+      </ImageBackground>
     </>
   );
 }
@@ -289,44 +272,53 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
-    padding: Spacing.LG,
-    paddingBottom: Spacing.XXL,
+    padding: Spacing.MD,
+    paddingBottom: Spacing.HUGE,
+    paddingTop: 90,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
   },
-  label: {
-    fontFamily: "Poppins-Medium",
-    fontSize: FontSizes.SM,
-    color: colors.textDark,
-    marginBottom: Spacing.SM,
-    fontWeight: "500",
-  },
-  textInput: {
+  formSection: {
     width: "100%",
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  logo: {
+    width: 200,
+    height: 150,
+    marginTop: -40,
+    marginBottom: Spacing.XL,
+  },
+  iconInputContainer: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.white,
     borderRadius: 12,
+    paddingHorizontal: Spacing.MD,
+    gap: Spacing.MD,
+    backgroundColor: colors.white,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  iconInputContainerFocused: {
+    borderColor: colors.white,
+  },
+  iconTextInput: {
+    flex: 1,
     padding: Spacing.MD,
     fontSize: FontSizes.Base,
     fontFamily: "Poppins-Regular",
     color: colors.textDark,
   },
-  inputWithFloatingLabel: {
-    paddingTop: Spacing.LG,
-  },
-  passwordContainer: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingRight: Spacing.MD,
-  },
-  passwordInput: {
+  iconPasswordInput: {
     flex: 1,
     padding: Spacing.MD,
-    paddingTop: Spacing.LG,
     fontSize: FontSizes.Base,
     fontFamily: "Poppins-Regular",
     color: colors.textDark,
@@ -334,50 +326,50 @@ const styles = StyleSheet.create({
   passwordIconButton: {
     padding: Spacing.SM,
   },
-  floatingLabelContainer: {
+  inputContainer: {
     width: "100%",
+    maxWidth: 420,
     marginBottom: Spacing.MD,
-    position: "relative" as const,
-  },
-  floatingLabel: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.Base,
-    color: colors.textLight,
-    position: "absolute" as const,
-    left: Spacing.MD,
-    top: Spacing.MD,
-    zIndex: 1,
-  },
-  floatingLabelActive: {
-    fontSize: FontSizes.XS,
-    top: -Spacing.SM,
-    backgroundColor: colors.white,
-    paddingHorizontal: Spacing.SM,
-    color: colors.primary,
-    fontFamily: "Poppins-Medium",
-    fontWeight: "500" as const,
   },
   errorText: {
     fontFamily: "Poppins-Regular",
     fontSize: FontSizes.XS,
     fontWeight: "400",
     color: colors.danger,
-    marginBottom: Spacing.MD,
+    marginBottom: Spacing.SM,
+    paddingHorizontal: Spacing.MD,
+    paddingVertical: Spacing.SM,
+    borderRadius: 10,
+    backgroundColor: colors.white,
+    alignSelf: "flex-start",
+    width: "100%",
+    textAlign: "left",
   },
   forgotContainer: {
-    alignSelf: "flex-end",
-    marginTop: Spacing.SM,
+    alignSelf: "center",
   },
   forgotText: {
     fontFamily: "Poppins-Medium",
     fontSize: FontSizes.SM,
-    fontWeight: "500",
+    fontWeight: "600",
     color: colors.primary,
+    paddingTop: Spacing.MD,
   },
   loginButton: {
     width: "100%",
-    marginTop: Spacing.XL,
+    maxWidth: 420,
+    marginTop: Spacing.XS,
   },
+  createAccountButton: {
+    width: "100%",
+    maxWidth: 420,
+    alignItems: "center",
+  },
+  footerSpacer: {
+    flexGrow: 1,
+    minHeight: Spacing.XL,
+  },
+
   signupContainer: {
     width: "100%",
     flexDirection: "row",
@@ -399,7 +391,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: "100%",
     alignItems: "center",
-    marginTop: Spacing.MD,
+    marginTop: "auto",
     paddingVertical: Spacing.SM,
   },
   backButtonText: {

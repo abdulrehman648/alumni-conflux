@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ShieldCheck } from "lucide-react-native";
+import { ShieldCheck, Mail, Lock, Eye, EyeOff } from "lucide-react-native";
 import { useState } from "react";
 import {
   Alert,
@@ -26,6 +26,7 @@ export default function ForgotPassword() {
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -45,10 +46,6 @@ export default function ForgotPassword() {
         setLoading(true);
         try {
           await authService.forgotPassword(email.toLowerCase());
-          Alert.alert("Code Sent", `Reset code sent to ${email}`, [
-            { text: "Cancel", style: "cancel" },
-            { text: "OK" },
-          ]);
           setStep(2);
         } catch (err: any) {
           const errData = err.response?.data;
@@ -82,11 +79,6 @@ export default function ForgotPassword() {
         try {
           const res = await authService.verifyOtp(email.toLowerCase(), code);
           if (!res.success) throw new Error(res.message);
-
-          Alert.alert("Code Verified", "You can now create a new password.", [
-            { text: "Cancel", style: "cancel" },
-            { text: "OK" },
-          ]);
           setStep(3);
         } catch (err: any) {
           Alert.alert("Error", err.message || "Invalid code", [{ text: "OK" }]);
@@ -191,16 +183,18 @@ export default function ForgotPassword() {
 
         {step === 1 && (
           <AuthCard>
-            <Text style={styles.label}>Email Address</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder=""
-              placeholderTextColor={colors.textLight}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              editable
-            />
+            <View style={styles.iconInputContainer}>
+              <Mail size={20} color={colors.primary} strokeWidth={2} />
+              <TextInput
+                style={styles.iconTextInput}
+                placeholder="Email"
+                placeholderTextColor={colors.textLight}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                editable
+              />
+            </View>
             <Text style={styles.hintText}>
               We'll send a verification code to this email
             </Text>
@@ -210,10 +204,9 @@ export default function ForgotPassword() {
 
         {step === 2 && (
           <AuthCard>
-            <Text style={styles.label}>Verification Code</Text>
             <TextInput
               style={styles.textInput}
-              placeholder="000000"
+              placeholder="OTP Code "
               placeholderTextColor={colors.textLight}
               value={code}
               onChangeText={(text) => {
@@ -236,16 +229,31 @@ export default function ForgotPassword() {
 
         {step === 3 && (
           <AuthCard>
-            <Text style={styles.label}>New Password</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="••••••••"
-              placeholderTextColor={colors.textLight}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry
-              editable
-            />
+            <View style={styles.passwordContainerWithIcon}>
+              <Lock size={20} color={colors.primary} strokeWidth={2} />
+              <TextInput
+                style={styles.iconPasswordInput}
+                placeholder="New Password"
+                placeholderTextColor={colors.textLight}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry={!showPassword}
+                editable
+              />
+              {newPassword.length > 0 && (
+                <TouchableOpacity
+                  style={styles.passwordIconButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                  activeOpacity={0.7}
+                >
+                  {showPassword ? (
+                    <EyeOff size={20} color={colors.textLight} />
+                  ) : (
+                    <Eye size={20} color={colors.textLight} />
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
             <View style={styles.passwordRequirements}>
               <Text
                 style={[
@@ -275,16 +283,31 @@ export default function ForgotPassword() {
               </Text>
             </View>
 
-            <Text style={styles.label}>Confirm Password</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="••••••••"
-              placeholderTextColor={colors.textLight}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              editable
-            />
+            <View style={styles.passwordContainerWithIcon}>
+              <Lock size={20} color={colors.primary} strokeWidth={2} />
+              <TextInput
+                style={styles.iconPasswordInput}
+                placeholder="Confirm Password"
+                placeholderTextColor={colors.textLight}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showPassword}
+                editable
+              />
+              {confirmPassword.length > 0 && (
+                <TouchableOpacity
+                  style={styles.passwordIconButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                  activeOpacity={0.7}
+                >
+                  {showPassword ? (
+                    <EyeOff size={20} color={colors.textLight} />
+                  ) : (
+                    <Eye size={20} color={colors.textLight} />
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </AuthCard>
         )}
@@ -386,15 +409,58 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     minWidth: 25,
   },
-  label: {
-    fontFamily: "Poppins-Medium",
-    fontSize: FontSizes.SM,
+  iconInputContainer: {
+    width: "100%",
+    flexDirection: "row" as const,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: Spacing.MD,
+    gap: Spacing.MD,
+    marginBottom: Spacing.MD,
+  },
+  iconTextInput: {
+    flex: 1,
+    height: 48,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    fontSize: FontSizes.Base,
+    fontFamily: "Poppins-Regular",
     color: colors.textDark,
-    marginBottom: Spacing.SM,
-    fontWeight: "500",
+    textAlignVertical: "center",
+  },
+  passwordContainerWithIcon: {
+    width: "100%",
+    flexDirection: "row" as const,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: Spacing.MD,
+    gap: Spacing.MD,
+    marginBottom: Spacing.MD,
+  },
+  iconPasswordInput: {
+    flex: 1,
+    height: 48,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    fontSize: FontSizes.Base,
+    fontFamily: "Poppins-Regular",
+    color: colors.textDark,
+    textAlignVertical: "center",
+  },
+  passwordIconButton: {
+    padding: 0,
   },
   textInput: {
     width: "100%",
+    backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
@@ -484,7 +550,7 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.Base,
+    fontSize: FontSizes.SM,
     fontWeight: "400",
     color: colors.textLight,
   },

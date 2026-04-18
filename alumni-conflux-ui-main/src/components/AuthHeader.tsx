@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -6,9 +6,9 @@ import {
   Image,
   ViewStyle,
   ImageSourcePropType,
-} from 'react-native';
-import colors from '../theme/colors';
-import { FontFamily, FontSizes, Spacing } from '../../constants/theme';
+} from "react-native";
+import colors from "../theme/colors";
+import { FontFamily, FontSizes, Spacing } from "../../constants/theme";
 
 interface AuthHeaderProps {
   title: string;
@@ -40,27 +40,27 @@ export default function AuthHeader({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    marginBottom: Spacing.XXXL,
+    alignItems: "center",
+    marginBottom: Spacing.XL,
   },
   illustration: {
-    width: 200,
-    height: 200,
+    width: 180,
+    height: 180,
     marginBottom: Spacing.XXXL,
   },
   title: {
     fontFamily: FontFamily.bold,
-    fontSize: FontSizes.XXXL,
-    fontWeight: '700',
+    fontSize: 36,
+    fontWeight: "700",
     color: colors.primary,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: Spacing.MD,
   },
   subtitle: {
     fontFamily: FontFamily.regular,
     fontSize: FontSizes.Base,
-    fontWeight: '400',
+    fontWeight: "400",
     color: colors.textLight,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

@@ -1,15 +1,15 @@
 const colors = {
-  primary: "#0F4C4F", // Deep Teal
+  primary: "#0F4C4F",
   secondary: "#1F6F70",
-  background: "#e5e5e5", // Warm Cream
+  background: "#f2f2f2",
   card: "#FFFFFF",
-  border: "#e5e5e5",
+  border: "#E0E0E0",
   textDark: "#1C1C1C",
   textLight: "#6E6E6E",
-  text: "#1C1C1C", // alias for textDark
-  textSecondary: "#6E6E6E", // alias for textLight
+  text: "#1C1C1C",
+  textSecondary: "#6E6E6E",
   white: "#FFFFFF",
-  surface: "#FAFAFA", // Light surface for inputs
+  surface: "#FAFAFA",
   success: "#2E7D32",
   danger: "#C62828",
 };

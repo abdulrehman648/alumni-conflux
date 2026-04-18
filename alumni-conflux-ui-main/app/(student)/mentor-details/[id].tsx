@@ -3,7 +3,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   TextInput,
   ScrollView,
   KeyboardAvoidingView,
@@ -16,7 +15,6 @@ import { useEffect, useState } from "react";
 import { mentorshipService } from "../../../src/services/api";
 import { useAuth } from "../../../src/context/AuthContext";
 import colors from "../../../src/theme/colors";
-import { Spacing, FontSizes } from "../../../constants/theme";
 import Toast from "react-native-toast-message";
 
 export default function MentorDetails() {
@@ -39,7 +37,7 @@ export default function MentorDetails() {
       const mentors = await mentorshipService.getAvailableMentors();
       const found = mentors.find(m => m.alumniId === Number(id));
       setMentor(found);
-    } catch (error) {
+    } catch {
       Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to fetch mentor details' });
     } finally {
       setLoading(false);

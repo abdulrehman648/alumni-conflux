@@ -121,11 +121,6 @@ export const authService = {
       return { success: true, message: response.data.message };
     } catch (error: any) {
       const errorData = error.response?.data;
-      console.error("Username check error:", {
-        status: error.response?.status,
-        errorData,
-        fullError: error,
-      });
       return {
         success: false,
         message:

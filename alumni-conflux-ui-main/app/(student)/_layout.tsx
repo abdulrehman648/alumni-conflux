@@ -1,26 +1,7 @@
-import { Stack, useRouter } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Stack } from "expo-router";
 import colors from "../../src/theme/colors";
 
-SplashScreen.preventAutoHideAsync();
-
-export default function RootLayout() {
-  const router = useRouter();
-
-  useEffect(() => {
-    async function prepare() {
-      try {
-        await SplashScreen.hideAsync();
-      } catch (e) {
-        console.warn(e);
-      }
-    }
-
-    prepare();
-  }, []);
-
+export default function StudentLayout() {
   return (
     <Stack
       screenOptions={{
@@ -41,9 +22,7 @@ export default function RootLayout() {
       <Stack.Screen name="bookings" options={{ title: "Bookings" }} />
       <Stack.Screen
         name="mentor-details/[id]"
-        options={{
-          title: "Mentor Details",
-        }}
+        options={{ title: "Mentor Details" }}
       />
       <Stack.Screen
         name="ai-career"
@@ -54,39 +33,3 @@ export default function RootLayout() {
     </Stack>
   );
 }
-
-const Splash = () => {
-  const router = useRouter();
-
-  useEffect(() => {
-    setTimeout(() => {
-      router.replace("/role");
-    }, 2000);
-  }, []);
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Alumni Conflux</Text>
-      <Text style={styles.subtitle}>Connecting Futures</Text>
-    </View>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: colors.white,
-  },
-  subtitle: {
-    marginTop: 10,
-    fontSize: 16,
-    color: colors.textLight,
-  },
-});

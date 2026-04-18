@@ -1,339 +1,454 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { EyeOff } from "lucide-react-native";
-import { useState } from "react";
+import { StatusBar } from "expo-status-bar";
 import {
+  AtSign,
+  Eye,
+  EyeOff,
+  Hash,
+  Lock,
+  Mail,
+  User,
+} from "lucide-react-native";
+import { useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Alert,
 } from "react-native";
-import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../constants/theme";
-import AuthCard from "../src/components/AuthCard";
-import AuthHeader from "../src/components/AuthHeader";
 import RoundedButton from "../src/components/RoundedButton";
 import { useAuth } from "../src/context/AuthContext";
 import { authService } from "../src/services/api";
 import colors from "../src/theme/colors";
 
-type FormStep = 1 | 2 | 3 | 4 | 5;
-
 export default function SignUp() {
   const router = useRouter();
   const { setAuthData } = useAuth();
   const { role } = useLocalSearchParams<{ role: string }>();
-  const [step, setStep] = useState<FormStep>(1);
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sendLoading, setSendLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fullNameLengthError, setFullNameLengthError] = useState("");
+  const [usernameExistsError, setUsernameExistsError] = useState("");
+  const [emailExistsError, setEmailExistsError] = useState("");
+  const [passwordFieldError, setPasswordFieldError] = useState("");
+  const [codeFieldError, setCodeFieldError] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [focusedField, setFocusedField] = useState<
+    "fullName" | "username" | "email" | "password" | "code" | null
+  >(null);
+  const fullNameRef = useRef<TextInput>(null);
+  const usernameRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const codeRef = useRef<TextInput>(null);
 
-  // Block Admin Signup
   if (role === "ADMIN") {
-    Alert.alert(
-      "Restricted",
-      "Admins cannot sign up via this portal.",
-      [{ text: "Cancel", style: "cancel" }, { text: "OK" }]
-    );
+    Alert.alert("Restricted", "Admins cannot sign up via this portal.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "OK" },
+    ]);
     router.replace("/role");
     return null;
   }
 
-  const handleNextStep = async () => {
+  const validateFormFields = (requireCode: boolean) => {
     setError("");
-    switch (step) {
-      case 1:
-        if (!fullName.trim()) {
-          setError("Full name is required");
-          return;
-        }
-        if (fullName.trim().length < 3) {
-          setError("Name must be at least 3 characters");
-          return;
-        }
-        setStep(2);
-        break;
+    setFullNameLengthError("");
+    setUsernameExistsError("");
+    setEmailExistsError("");
+    setPasswordFieldError("");
+    setCodeFieldError("");
 
-      case 2:
-        if (!username.trim()) {
-          setError("Username is required");
-          return;
-        }
-        if (username.length < 3) {
-          setError("Username must be at least 3 characters");
-          return;
-        }
-        if (!/^[a-z0-9_-]+$/.test(username)) {
-          setError("Only lowercase letters, numbers, _, - allowed");
-          return;
-        }
-        setLoading(true);
+    const fullNameLettersOnly = fullName.replace(/[^A-Za-z]/g, "");
+    if (!fullName.trim() || fullNameLettersOnly.length < 3) {
+      setFullNameLengthError("Full name must be at least 3 letters");
+      fullNameRef.current?.focus();
+      return false;
+    }
 
-        try {
-          const result = await authService.checkUsername(username);
-          if (result.success) {
-            setLoading(false);
-            setStep(3);
-          } else {
-            Alert.alert("Registration Error", result.message || "Username already taken", [{ text: "OK" }]);
-            setLoading(false);
-          }
-        } catch (err: any) {
-          const errData = err.response?.data;
-          const msg = errData?.message || errData?.error || errData?.detail || errData?.details || (typeof errData === 'string' ? errData : null) || "Failed to check username";
-          Alert.alert("Registration Error", msg, [{ text: "OK" }]);
-          setLoading(false);
-        }
-        break;
+    if (!username.trim() || username.length < 3) {
+      setUsernameExistsError("Username must be at least 3 characters");
+      usernameRef.current?.focus();
+      return false;
+    }
 
-      case 3:
-        if (!email.trim()) {
-          setError("Email is required");
-          return;
-        }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-          setError("Please enter a valid email");
-          return;
-        }
-        setLoading(true);
-        try {
-          const result = await authService.checkEmail(email);
-          if (result.success) {
-            Alert.alert(
-              "Code Sent",
-              `Verification code sent to ${email}`,
-              [{ text: "Cancel", style: "cancel" }, { text: "OK" }]
-            );
-            setLoading(false);
-            setStep(4);
-          } else {
-            Alert.alert("Registration Error", result.message || "Email already registered", [{ text: "OK" }]);
-            setLoading(false);
-          }
-        } catch (err: any) {
-          const errData = err.response?.data;
-          const msg = errData?.message || errData?.error || errData?.detail || errData?.details || (typeof errData === 'string' ? errData : null) || "Failed to check email";
-          Alert.alert("Registration Error", msg, [{ text: "OK" }]);
-          setLoading(false);
-        }
-        break;
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailExistsError("Please enter a valid email");
+      emailRef.current?.focus();
+      return false;
+    }
 
-      case 4:
-        if (!password.trim()) {
-          setError("Password is required");
-          return;
-        }
-        if (password.length < 6) {
-          setError("Password must be at least 6 characters");
-          return;
-        }
-        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-          setError("Password must have uppercase, lowercase, and number");
-          return;
-        }
-        setStep(5);
-        break;
+    if (!password.trim() || password.length < 6) {
+      setPasswordFieldError("Password should contain at least 6 characters.");
+      passwordRef.current?.focus();
+      return false;
+    }
 
-      case 5:
-        if (!code.trim()) {
-          setError("Verification code is required");
-          return;
-        }
-        if (code.length !== 6) {
-          setError("Code must be 6 digits");
-          return;
-        }
-        if (!/^\d+$/.test(code)) {
-          setError("Code must contain only numbers");
-          return;
-        }
-        setLoading(true);
-        try {
-          const result = await authService.verifyOtp(email, code);
-          if (result.success) {
-            // OTP verified, now signup and auto-login
-            try {
-              const signupData = {
-                fullName,
-                username,
-                email,
-                password,
-                role: role || "STUDENT",
-                otp: code,
-              };
-              const signupResult = await authService.signup(signupData);
-              if (signupResult.success) {
-                // Get the userId from signup response
-                const userId =
-                  signupResult.data?.userId || signupResult.data?.id;
+    if (requireCode) {
+      if (!code.trim()) {
+        setCodeFieldError("Verification code is required");
+        codeRef.current?.focus();
+        return false;
+      } else if (code.length !== 6 || !/^\d+$/.test(code)) {
+        setCodeFieldError("Code must be 6 digits");
+        codeRef.current?.focus();
+        return false;
+      }
+    }
 
-                const userIdStr = userId?.toString();
+    return true;
+  };
 
-                if (!userIdStr) {
-                  Alert.alert("Registration Error", "Failed to get user ID after signup", [{ text: "OK" }]);
-                  setLoading(false);
-                  return;
-                }
+  const handleSendCode = async () => {
+    setError("");
+    setFullNameLengthError("");
+    setUsernameExistsError("");
+    setEmailExistsError("");
+    setPasswordFieldError("");
+    setCodeFieldError("");
 
-                setAuthData({
-                  userId: userIdStr,
-                  userRole: role || "STUDENT",
-                  fullName: fullName,
-                  profileComplete: false,
-                });
+    const fullNameLettersOnly = fullName.replace(/[^A-Za-z]/g, "");
+    if (!fullName.trim() || fullNameLettersOnly.length < 3) {
+      setFullNameLengthError("Full name must be at least 3 letters");
+      fullNameRef.current?.focus();
+      return false;
+    }
 
-                setLoading(false);
+    if (!username.trim() || username.length < 3) {
+      setUsernameExistsError("Username must be at least 3 characters");
+      usernameRef.current?.focus();
+      return false;
+    }
 
-                if (role === "ALUMNI") {
-                  router.replace("/(alumni)");
-                } else {
-                  router.replace("/(student)");
-                }
-              } else {
-                Alert.alert("Registration Error", signupResult.message || "Failed to create account", [{ text: "OK" }]);
-                setLoading(false);
-              }
-            } catch (signupErr: any) {
-              const errData = signupErr.response?.data;
-              const msg = errData?.message || errData?.error || errData?.detail || errData?.details || (typeof errData === 'string' ? errData : null) || "Signup failed";
-              Alert.alert("Registration Error", msg, [{ text: "OK" }]);
-              setLoading(false);
-            }
-          } else {
-            Alert.alert("Verification Error", result.message || "Invalid or expired code", [{ text: "OK" }]);
-            setLoading(false);
-          }
-        } catch (err: any) {
-          const errData = err.response?.data;
-          const msg = errData?.message || errData?.error || errData?.detail || errData?.details || (typeof errData === 'string' ? errData : null) || "Failed to verify code";
-          Alert.alert("Verification Error", msg, [{ text: "OK" }]);
-          setLoading(false);
-        }
-        break;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailExistsError("Please enter a valid email");
+      emailRef.current?.focus();
+      return;
+    }
+
+    if (!email.trim()) {
+      emailRef.current?.focus();
+      return;
+    }
+
+    setSendLoading(true);
+    try {
+      const result = await authService.checkEmail(email);
+      const usernameResult = await authService.checkUsername(username);
+
+      if (!usernameResult.success) {
+        setUsernameExistsError(
+          usernameResult.message || "Username is already in use",
+        );
+        usernameRef.current?.focus();
+        return;
+      } else if (result.success) {
+        setOtpSent(true);
+        codeRef.current?.focus();
+        setCodeFieldError("Verification code is sent to your email");
+        // Alert.alert("Code Sent", `Verification code sent to ${email}`, [
+        //   { text: "OK" },
+        // ]);
+      } else {
+        setEmailExistsError(result.message || "Email already registered");
+        emailRef.current?.focus();
+      }
+    } catch (err: any) {
+      const errData = err.response?.data;
+      const msg =
+        errData?.message ||
+        errData?.error ||
+        errData?.detail ||
+        errData?.details ||
+        (typeof errData === "string" ? errData : null) ||
+        "Failed to check email";
+      Alert.alert("Registration Error", msg, [{ text: "OK" }]);
+    } finally {
+      setSendLoading(false);
     }
   };
 
-  const handleBackStep = () => {
+  const handleSignup = async () => {
     setError("");
-    setStep((step - 1) as FormStep);
-  };
+    setFullNameLengthError("");
+    setUsernameExistsError("");
+    setEmailExistsError("");
+    setPasswordFieldError("");
+    setCodeFieldError("");
 
-  const renderProgressBar = () => {
-    const progress = ((step - 1) / 4) * 100;
-    return (
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBarBackground}>
-          <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
-        </View>
-        <Text style={styles.progressText}>{step}/5</Text>
-      </View>
-    );
+    const shouldRequireCode = otpSent || code.trim().length > 0;
+    if (!validateFormFields(shouldRequireCode)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const usernameResult = await authService.checkUsername(username);
+
+      if (!usernameResult.success) {
+        setUsernameExistsError(
+          usernameResult.message || "Username is already in use",
+        );
+        usernameRef.current?.focus();
+        return;
+      }
+
+      if (!otpSent) {
+        const emailResult = await authService.checkEmail(email);
+        if (!emailResult.success) {
+          setEmailExistsError(
+            emailResult.message || "Email is already registered",
+          );
+          emailRef.current?.focus();
+          return;
+        }
+
+        setOtpSent(true);
+        codeRef.current?.focus();
+        Alert.alert("OTP Sent", `Verification code sent to ${email}`, [
+          { text: "OK" },
+        ]);
+        return;
+      }
+
+      const verifyResult = await authService.verifyOtp(email, code);
+      if (!verifyResult.success) {
+        Alert.alert(
+          "Verification Error",
+          verifyResult.message || "Invalid or expired code",
+          [{ text: "OK" }],
+        );
+        return;
+      }
+
+      const signupData = {
+        fullName,
+        username,
+        email,
+        password,
+        role: role || "STUDENT",
+        otp: code,
+      };
+      const signupResult = await authService.signup(signupData);
+
+      if (!signupResult.success) {
+        Alert.alert(
+          "Registration Error",
+          signupResult.message || "Failed to create account",
+          [{ text: "OK" }],
+        );
+        return;
+      }
+
+      const userId = signupResult.data?.userId || signupResult.data?.id;
+      const userIdStr = userId?.toString();
+
+      if (!userIdStr) {
+        Alert.alert(
+          "Registration Error",
+          "Failed to get user ID after signup",
+          [{ text: "OK" }],
+        );
+        return;
+      }
+
+      setAuthData({
+        userId: userIdStr,
+        userRole: role || "STUDENT",
+        fullName,
+        profileComplete: false,
+      });
+
+      if (role === "ALUMNI") {
+        router.replace("/(alumni)");
+      } else {
+        router.replace("/(student)");
+      }
+    } catch (err: any) {
+      const errData = err.response?.data;
+      const msg =
+        errData?.message ||
+        errData?.error ||
+        errData?.detail ||
+        errData?.details ||
+        (typeof errData === "string" ? errData : null) ||
+        "Signup failed";
+      Alert.alert("Registration Error", msg, [{ text: "OK" }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+    <>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <ImageBackground
+        source={require("../assets/images/background.jpeg")}
+        style={styles.container}
+        resizeMode="cover"
       >
-        <AuthHeader
-          title="Welcome Onboard"
-          subtitle={
-            step === 1
-              ? "Let's get started"
-              : step === 2
-                ? "Choose your username"
-                : step === 3
-                  ? "Verify your email"
-                  : step === 4
-                    ? "Set a password"
-                    : step === 5
-                      ? "Enter verification code"
-                      : "Welcome!"
-          }
-        />
+        <ScrollView
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Image
+            source={require("../assets/images/alumni-conflux-logo.jpeg")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
 
-        {renderProgressBar()}
-
-        {step === 1 && (
-          <AuthCard>
-            <Text style={styles.label}>Full Name</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter your name"
-              placeholderTextColor={colors.textLight}
-              value={fullName}
-              onChangeText={setFullName}
-              editable
-            />
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </AuthCard>
-        )}
-
-        {step === 2 && (
-          <AuthCard>
-            <Text style={styles.label}>Username</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Username"
-              placeholderTextColor={colors.textLight}
-              value={username}
-              onChangeText={setUsername}
-              editable
-            />
-            <Text style={styles.hintText}>
-              Letters, numbers, underscore or hyphen
-            </Text>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </AuthCard>
-        )}
-
-        {step === 3 && (
-          <AuthCard>
-            <Text style={styles.label}>Email Address</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder=""
-              placeholderTextColor={colors.textLight}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              editable
-            />
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </AuthCard>
-        )}
-
-        {step === 4 && (
-          <AuthCard>
-            <View style={styles.floatingLabelContainer}>
-              <Text
+          <View style={styles.formSection}>
+            <View style={styles.inputContainer}>
+              <View
                 style={[
-                  styles.floatingLabel,
-                  (passwordFocused || password.length > 0) &&
-                  styles.floatingLabelActive,
+                  styles.iconInputContainer,
+                  !!fullNameLengthError && styles.iconInputContainerDanger,
+                  focusedField === "fullName" &&
+                    styles.iconInputContainerFocused,
                 ]}
               >
-                Password
-              </Text>
-              <View style={styles.passwordContainer}>
+                <User size={20} color={colors.primary} strokeWidth={2} />
                 <TextInput
-                  style={styles.passwordInput}
+                  ref={fullNameRef}
+                  style={styles.iconTextInput}
+                  placeholder="Full name"
+                  placeholderTextColor={colors.textLight}
+                  value={fullName}
+                  onChangeText={(text) => {
+                    setFullName(text);
+                    if (fullNameLengthError) {
+                      setFullNameLengthError("");
+                    }
+                  }}
+                  onFocus={() => setFocusedField("fullName")}
+                  onBlur={() => setFocusedField(null)}
+                  editable={!loading}
+                />
+              </View>
+              {!!fullNameLengthError && (
+                <Text style={styles.fullNameErrorText}>
+                  {fullNameLengthError}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <View
+                style={[
+                  styles.iconInputContainer,
+                  !!usernameExistsError && styles.iconInputContainerDanger,
+                  focusedField === "username" &&
+                    styles.iconInputContainerFocused,
+                ]}
+              >
+                <AtSign size={20} color={colors.primary} strokeWidth={2} />
+                <TextInput
+                  ref={usernameRef}
+                  style={styles.iconTextInput}
+                  placeholder="Username"
+                  placeholderTextColor={colors.textLight}
+                  value={username}
+                  onChangeText={(text) => {
+                    const filtered = text.replace(/[^a-z0-9_]/g, "");
+                    if (usernameExistsError) {
+                      setUsernameExistsError("");
+                    }
+                    if (filtered !== username) {
+                      setUsername(filtered);
+                    }
+                  }}
+                  onFocus={() => setFocusedField("username")}
+                  onBlur={() => setFocusedField(null)}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="username"
+                  editable={!loading}
+                />
+              </View>
+              {!!usernameExistsError && (
+                <Text style={styles.usernameExistsText}>
+                  {usernameExistsError}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <View
+                style={[
+                  styles.iconInputContainer,
+                  !!emailExistsError && styles.iconInputContainerDanger,
+                  focusedField === "email" && styles.iconInputContainerFocused,
+                ]}
+              >
+                <Mail size={20} color={colors.primary} strokeWidth={2} />
+                <TextInput
+                  ref={emailRef}
+                  style={styles.iconTextInput}
+                  placeholder="Email"
+                  placeholderTextColor={colors.textLight}
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (emailExistsError) {
+                      setEmailExistsError("");
+                    }
+                    if (otpSent) {
+                      setOtpSent(false);
+                      setCode("");
+                    }
+                  }}
+                  onFocus={() => setFocusedField("email")}
+                  onBlur={() => setFocusedField(null)}
+                  keyboardType="email-address"
+                  editable={!loading}
+                />
+              </View>
+              {!!emailExistsError && (
+                <Text style={styles.emailExistsText}>{emailExistsError}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <View
+                style={[
+                  styles.iconInputContainer,
+                  !!passwordFieldError && styles.iconInputContainerDanger,
+                  focusedField === "password" &&
+                    styles.iconInputContainerFocused,
+                ]}
+              >
+                <Lock size={20} color={colors.primary} strokeWidth={2} />
+                <TextInput
+                  ref={passwordRef}
+                  style={styles.iconPasswordInput}
                   value={password}
-                  onChangeText={setPassword}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (passwordFieldError) {
+                      setPasswordFieldError("");
+                    }
+                  }}
+                  onFocus={() => setFocusedField("password")}
+                  onBlur={() => setFocusedField(null)}
                   secureTextEntry={!showPassword}
-                  editable
+                  editable={!loading}
+                  placeholder="Password"
+                  placeholderTextColor={colors.textLight}
                 />
                 {password.length > 0 && (
                   <TouchableOpacity
@@ -341,107 +456,90 @@ export default function SignUp() {
                     onPress={() => setShowPassword(!showPassword)}
                     activeOpacity={0.7}
                   >
-                    <EyeOff size={20} color={colors.textLight} />
+                    {showPassword ? (
+                      <EyeOff size={20} color={colors.textLight} />
+                    ) : (
+                      <Eye size={20} color={colors.textLight} />
+                    )}
                   </TouchableOpacity>
                 )}
               </View>
+              {!!passwordFieldError && (
+                <Text style={styles.passwordErrorText}>
+                  {passwordFieldError}
+                </Text>
+              )}
             </View>
-            <View style={styles.passwordRequirements}>
-              <Text
+
+            <View style={styles.inputContainer}>
+              <View
                 style={[
-                  styles.requirementText,
-                  password.length >= 6 && styles.requirementMet,
+                  styles.iconInputContainer,
+                  focusedField === "code" && styles.iconInputContainerFocused,
                 ]}
               >
-                {password.length >= 6 ? "✓" : "○"} At least 6 characters
-              </Text>
-              <Text
-                style={[
-                  styles.requirementText,
-                  /(?=.*[a-z])(?=.*[A-Z])/.test(password) &&
-                  styles.requirementMet,
-                ]}
-              >
-                {/(?=.*[a-z])(?=.*[A-Z])/.test(password) ? "✓" : "○"} Mix of
-                uppercase & lowercase
-              </Text>
-              <Text
-                style={[
-                  styles.requirementText,
-                  /\d/.test(password) && styles.requirementMet,
-                ]}
-              >
-                {/\d/.test(password) ? "✓" : "○"} At least one number
-              </Text>
+                <Hash size={20} color={colors.primary} strokeWidth={2} />
+                <TextInput
+                  ref={codeRef}
+                  style={styles.iconTextInput}
+                  placeholder="Verification Code"
+                  placeholderTextColor={colors.textLight}
+                  value={code}
+                  onChangeText={(text) => {
+                    const numericText = text.replace(/[^0-9]/g, "").slice(0, 6);
+                    setCode(numericText);
+                    if (codeFieldError) {
+                      setCodeFieldError("");
+                    }
+                  }}
+                  onFocus={() => setFocusedField("code")}
+                  onBlur={() => setFocusedField(null)}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  editable={!loading}
+                />
+                <TouchableOpacity
+                  style={styles.otpSendButton}
+                  onPress={handleSendCode}
+                  disabled={sendLoading}
+                  activeOpacity={0.8}
+                >
+                  {sendLoading ? (
+                    <ActivityIndicator color={colors.white} size="small" />
+                  ) : (
+                    <Text style={styles.otpSendButtonText}>Send</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {!!codeFieldError && (
+                <Text style={styles.codeErrorText}>{codeFieldError}</Text>
+              )}
             </View>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </AuthCard>
-        )}
 
-        {step === 5 && (
-          <AuthCard>
-            <Text style={styles.label}>Verification Code</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="000000"
-              placeholderTextColor={colors.textLight}
-              value={code}
-              onChangeText={(text) => {
-                const numericText = text.replace(/[^0-9]/g, "").slice(0, 6);
-                setCode(numericText);
-              }}
-              keyboardType="number-pad"
-              maxLength={6}
-              editable
-            />
-            <TouchableOpacity style={styles.resendContainer}>
-              <Text style={styles.resendText}>
-                Didn't receive code?{" "}
-                <Text style={styles.resendLink}>Resend</Text>
-              </Text>
-            </TouchableOpacity>
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </AuthCard>
-        )}
 
-        <View style={styles.buttonContainer}>
-          <RoundedButton
-            title={
-              step === 3 ? "Send Code" : step === 5 ? "Create Account" : "Next"
-            }
-            onPress={handleNextStep}
-            variant="primary"
-            size="large"
-            loading={loading}
-          />
-          {step > 1 && (
             <RoundedButton
-              title="Back"
-              onPress={handleBackStep}
-              variant="secondary"
-              size="large"
-              style={styles.backButtonAction}
+              title="Create Account"
+              onPress={handleSignup}
+              variant="primary"
+              size="small"
+              loading={loading}
+              style={styles.createAccountButton}
             />
-          )}
-        </View>
 
-        <View style={styles.signupContainer}>
-          <Text style={styles.signupText}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => router.push("/login")}>
-            <Text style={styles.signupLink}>Sign In</Text>
-          </TouchableOpacity>
-        </View>
+            <View style={styles.footerSpacer} />
 
-        {step === 1 && (
-          <TouchableOpacity
-            onPress={() => router.replace("/role")}
-            style={styles.backLink}
-          >
-            <Text style={styles.backLinkText}>Back to Role Selection</Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
-    </View>
+            <RoundedButton
+              title="Already have an account? Log In"
+              onPress={() => router.push("/login")}
+              variant="outline"
+              size="small"
+              style={styles.createAccountButton}
+            />
+          </View>
+        </ScrollView>
+      </ImageBackground>
+    </>
   );
 }
 
@@ -450,92 +548,57 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  scrollView: {
-    flex: 1,
-  },
   contentContainer: {
     flexGrow: 1,
-    padding: Spacing.LG,
-    paddingBottom: Spacing.XXL,
+    padding: Spacing.MD,
+    paddingBottom: Spacing.HUGE,
+    paddingTop: 90,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
   },
-  progressContainer: {
+  formSection: {
     width: "100%",
+    flexGrow: 1,
+    alignItems: "center",
+  },
+  logo: {
+    width: 200,
+    height: 150,
+    marginTop: -40,
     marginBottom: Spacing.XL,
+  },
+  inputContainer: {
+    width: "100%",
+    maxWidth: 420,
+    marginBottom: Spacing.MD,
+  },
+  iconInputContainer: {
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.MD,
-    paddingHorizontal: Spacing.LG,
-  },
-  progressBarBackground: {
-    flex: 1,
-    height: 4,
-    backgroundColor: "#E5D6C3",
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-  },
-  progressText: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.XS,
-    fontWeight: "600",
-    color: colors.textLight,
-    minWidth: 25,
-  },
-  progressItemContainer: {
-    display: "none",
-  },
-  progressDot: {
-    display: "none",
-  },
-  progressDotActive: {
-    display: "none",
-  },
-  progressLine: {
-    display: "none",
-  },
-  progressLineActive: {
-    display: "none",
-  },
-  stepIndicator: {
-    display: "none",
-  },
-  label: {
-    fontFamily: "Poppins-Medium",
-    fontSize: FontSizes.SM,
-    color: colors.textDark,
-    marginBottom: Spacing.SM,
-    fontWeight: "500",
-  },
-  textInput: {
-    width: "100%",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.white,
     borderRadius: 12,
+    paddingHorizontal: Spacing.MD,
+    gap: Spacing.MD,
+    backgroundColor: colors.white,
+  },
+  iconInputContainerFocused: {
+    borderColor: colors.primary,
+  },
+  iconInputContainerDanger: {
+    borderColor: colors.danger,
+  },
+  iconTextInput: {
+    flex: 1,
     padding: Spacing.MD,
     fontSize: FontSizes.Base,
     fontFamily: "Poppins-Regular",
     color: colors.textDark,
-    marginBottom: Spacing.MD,
   },
-  passwordContainer: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingRight: Spacing.MD,
-  },
-  passwordInput: {
+  iconPasswordInput: {
     flex: 1,
     padding: Spacing.MD,
-    paddingTop: Spacing.LG,
     fontSize: FontSizes.Base,
     fontFamily: "Poppins-Regular",
     color: colors.textDark,
@@ -543,188 +606,87 @@ const styles = StyleSheet.create({
   passwordIconButton: {
     padding: Spacing.SM,
   },
-  floatingLabelContainer: {
-    width: "100%",
-    marginBottom: Spacing.MD,
-    position: "relative" as const,
+  otpSendButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: Spacing.MD,
+    paddingVertical: Spacing.SM,
   },
-  floatingLabel: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.Base,
-    color: colors.textLight,
-    position: "absolute" as const,
-    left: Spacing.MD,
-    top: Spacing.MD,
-    zIndex: 1,
-  },
-  floatingLabelActive: {
-    fontSize: FontSizes.XS,
-    top: -Spacing.SM,
-    backgroundColor: colors.white,
-    paddingHorizontal: Spacing.SM,
-    color: colors.primary,
-    fontFamily: "Poppins-Medium",
-    fontWeight: "500" as const,
-  },
-  hintText: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.XS,
-    fontWeight: "400",
-    color: colors.textLight,
-    marginBottom: Spacing.LG,
-  },
-  passwordRequirements: {
-    marginTop: Spacing.MD,
-    paddingTop: Spacing.MD,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  requirementText: {
-    fontFamily: "Poppins-Regular",
+  otpSendButtonText: {
+    fontFamily: "Poppins-SemiBold",
     fontSize: FontSizes.SM,
+    fontWeight: "600",
+    color: colors.white,
+  },
+  passwordErrorText: {
+    marginTop: Spacing.XS,
+    marginLeft: Spacing.SM,
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.XS,
     fontWeight: "400",
-    color: colors.textLight,
-    marginBottom: Spacing.SM,
+    color: colors.danger,
+    textAlign: "left",
   },
   requirementMet: {
     color: colors.success,
   },
-  resendContainer: {
-    marginTop: Spacing.MD,
-  },
-  resendText: {
+  emailExistsText: {
+    marginTop: Spacing.XS,
+    marginLeft: Spacing.SM,
     fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.SM,
+    fontSize: FontSizes.XS,
     fontWeight: "400",
-    color: colors.textLight,
-    textAlign: "center",
+    color: colors.danger,
+    textAlign: "left",
   },
-  resendLink: {
-    fontFamily: "Poppins-SemiBold",
-    fontWeight: "600",
-    color: colors.primary,
-  },
-  successContainer: {
-    alignItems: "center",
-    paddingVertical: Spacing.LG,
-  },
-  successEmoji: {
-    fontSize: 48,
-    marginBottom: Spacing.LG,
-  },
-  successTitle: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.LG,
-    fontWeight: "600",
-    color: colors.textDark,
-    marginBottom: Spacing.SM,
-    textAlign: "center",
-  },
-  successSubtitle: {
+  usernameExistsText: {
+    marginTop: Spacing.XS,
+    marginLeft: Spacing.SM,
     fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.Base,
+    fontSize: FontSizes.XS,
     fontWeight: "400",
-    color: colors.textLight,
-    textAlign: "center",
-    marginBottom: Spacing.XXXL,
-    lineHeight: 22,
+    color: colors.danger,
+    textAlign: "left",
   },
-  accountInfoContainer: {
-    width: "100%",
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: Spacing.LG,
-    marginBottom: Spacing.XL,
+  fullNameErrorText: {
+    marginTop: Spacing.XS,
+    marginLeft: Spacing.SM,
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.XS,
+    fontWeight: "400",
+    color: colors.danger,
+    textAlign: "left",
   },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: Spacing.SM,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  infoLabel: {
-    fontFamily: "Poppins-Medium",
-    fontSize: FontSizes.SM,
-    fontWeight: "500",
-    color: colors.textLight,
-  },
-  infoValue: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.Base,
-    fontWeight: "600",
-    color: colors.primary,
-  },
-  illustrationContainer: {
-    display: "none",
-  },
-  illustration: {
-    display: "none",
+  codeErrorText: {
+    marginTop: Spacing.XS,
+    marginLeft: Spacing.SM,
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.XS,
+    fontWeight: "400",
+    color: colors.danger,
+    textAlign: "left",
   },
   errorText: {
     fontFamily: "Poppins-Regular",
     fontSize: FontSizes.XS,
     fontWeight: "400",
     color: colors.danger,
-    marginBottom: Spacing.MD,
-  },
-  actionButton: {
-    display: "none",
-  },
-  backButton: {
-    display: "none",
-  },
-  buttonContainer: {
+    marginBottom: Spacing.SM,
+    alignSelf: "center",
     width: "100%",
-    marginTop: Spacing.XL,
-    gap: Spacing.MD,
-  },
-  backButtonAction: {
-    marginTop: 0,
-  },
-  loginButton: {
-    width: "100%",
-    marginTop: Spacing.XL,
-  },
-  loginContainer: {
-    display: "none",
-  },
-  signupContainer: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: Spacing.MD,
-  },
-  signupText: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.Base,
-    fontWeight: "400",
-    color: colors.textLight,
-  },
-  signupLink: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.Base,
-    fontWeight: "600",
-    color: colors.primary,
-  },
-  linkButton: {
-    display: "none",
-  },
-  linkText: {
-    display: "none",
-  },
-  backLink: {
-    width: "100%",
-    alignItems: "center",
-    marginTop: Spacing.MD,
+    maxWidth: 420,
+    textAlign: "left",
+    backgroundColor: colors.white,
+    borderRadius: 10,
+    paddingHorizontal: Spacing.MD,
     paddingVertical: Spacing.SM,
   },
-  backLinkText: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.SM,
-    fontWeight: "400",
-    color: colors.textLight,
-    textDecorationLine: "underline",
+  createAccountButton: {
+    width: "100%",
+    maxWidth: 420,
+  },
+  footerSpacer: {
+    flexGrow: 1,
+    minHeight: Spacing.XL,
   },
 });

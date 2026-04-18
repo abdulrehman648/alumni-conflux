@@ -43,8 +43,10 @@ public class StudentServiceImpl implements StudentService {
                     return newStudent;
                 });
 
-        student.setInstitutionName(request.getInstitutionName());
-        student.setExpectedGraduationYear(request.getExpectedGraduationYear());
+        if (request.getInstitutionName() != null)
+            student.setInstitutionName(request.getInstitutionName());
+        if (request.getExpectedGraduationYear() != null)
+            student.setExpectedGraduationYear(request.getExpectedGraduationYear());
 
         if (request.getFullName() != null)
             user.setFullName(request.getFullName());
@@ -58,12 +60,18 @@ public class StudentServiceImpl implements StudentService {
             details = new StudentDetails();
         }
 
-        details.setDepartment(request.getDepartment());
-        details.setDegreeProgram(request.getDegreeProgram());
-        details.setMajor(request.getMajor());
-        details.setCurrentSemester(request.getCurrentSemester());
-        details.setSkills(request.getSkills());
-        details.setCareerPreferences(request.getCareerPreferences());
+        if (request.getDepartment() != null)
+            details.setDepartment(request.getDepartment());
+        if (request.getDegreeProgram() != null)
+            details.setDegreeProgram(request.getDegreeProgram());
+        if (request.getMajor() != null)
+            details.setMajor(request.getMajor());
+        if (request.getCurrentSemester() != null)
+            details.setCurrentSemester(request.getCurrentSemester());
+        if (request.getSkills() != null)
+            details.setSkills(request.getSkills());
+        if (request.getCareerPreferences() != null)
+            details.setCareerPreferences(request.getCareerPreferences());
 
         student.setDetails(details);
 
