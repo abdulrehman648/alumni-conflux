@@ -20,8 +20,12 @@ public class Contribution {
     @JoinColumn(name = "alumni_id", nullable = false)
     private Alumni alumni;
 
-    @Column(name = "screenshot_url", nullable = false)
-    private String screenshotUrl;
+    @Lob
+    @Column(name = "screenshot_data", nullable = false)
+    private byte[] screenshotData;
+
+    @Column(name = "screenshot_type")
+    private String screenshotType;
 
     @Column(nullable = false)
     private Double amount;
@@ -64,12 +68,20 @@ public class Contribution {
         this.alumni = alumni;
     }
 
-    public String getScreenshotUrl() {
-        return screenshotUrl;
+    public byte[] getScreenshotData() {
+        return screenshotData;
     }
 
-    public void setScreenshotUrl(String screenshotUrl) {
-        this.screenshotUrl = screenshotUrl;
+    public void setScreenshotData(byte[] screenshotData) {
+        this.screenshotData = screenshotData;
+    }
+
+    public String getScreenshotType() {
+        return screenshotType;
+    }
+
+    public void setScreenshotType(String screenshotType) {
+        this.screenshotType = screenshotType;
     }
 
     public Double getAmount() {

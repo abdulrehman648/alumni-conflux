@@ -9,7 +9,7 @@ export default function Splash() {
   useEffect(() => {
     setTimeout(() => {
       router.replace("/role");
-    }, 2000);
+    }, 1000);
   }, []);
 
   return (
@@ -25,13 +25,13 @@ export default function Splash() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.white,
     justifyContent: "center",
     alignItems: "center",
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 200,
+    height: 150,
     marginBottom: 30,
     resizeMode: "contain",
   },

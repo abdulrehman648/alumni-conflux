@@ -1,14 +1,5 @@
 import { useRouter } from "expo-router";
-import {
-  BarChart3,
-  Calendar,
-  FileText,
-  Heart,
-  Settings,
-  Shield,
-  Users,
-  Users2,
-} from "lucide-react-native";
+import { Calendar, Heart, Users, Users2 } from "lucide-react-native";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { FontSizes, Spacing } from "../../constants/theme";
 import DashboardHeader from "../../src/components/DashboardHeader";
@@ -64,20 +55,11 @@ export default function AdminHome() {
       icon: Heart,
       route: "/(admin)/donations",
     },
-    {
-      title: "View Analytics",
-      description: "Track system analytics and insights",
-      icon: BarChart3,
-    },
   ];
 
   return (
     <View style={styles.container}>
-      <DashboardHeader
-        fullName={fullName}
-        roleLabel="Admin"
-        fallbackName="Admin"
-      />
+      <DashboardHeader fullName={fullName} fallbackName="Admin" />
 
       <ScrollView
         style={styles.scrollView}

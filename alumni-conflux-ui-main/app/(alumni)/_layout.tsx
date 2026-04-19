@@ -47,6 +47,10 @@ export default function AlumniLayout() {
       <Tabs.Screen name="availability" options={hiddenTabScreenOptions} />
       <Tabs.Screen name="history" options={hiddenTabScreenOptions} />
       <Tabs.Screen name="mentor-assessment" options={hiddenTabScreenOptions} />
+      <Tabs.Screen
+        name="chat/[conversationId]"
+        options={hiddenTabScreenOptions}
+      />
     </BottomTabNavigator>
   );
 }

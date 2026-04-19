@@ -128,7 +128,7 @@ export default function AlumniEventsScreen() {
     const hh = pad(date.getHours());
     const min = pad(date.getMinutes());
     const ss = pad(date.getSeconds());
-    return `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss}`;
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
   };
 
   const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {

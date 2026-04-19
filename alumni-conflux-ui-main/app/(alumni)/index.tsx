@@ -73,11 +73,7 @@ export default function AlumniHome() {
 
   return (
     <View style={styles.container}>
-      <DashboardHeader
-        fullName={fullName}
-        roleLabel="Alumni"
-        fallbackName="Alumni"
-      />
+      <DashboardHeader fullName={fullName} fallbackName="Alumni" />
 
       <ScrollView
         style={styles.scrollView}

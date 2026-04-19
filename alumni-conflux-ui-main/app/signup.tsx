@@ -516,8 +516,6 @@ export default function SignUp() {
               )}
             </View>
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
             <RoundedButton
               title="Create Account"
               onPress={handleSignup}
@@ -665,21 +663,6 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     color: colors.danger,
     textAlign: "left",
-  },
-  errorText: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.XS,
-    fontWeight: "400",
-    color: colors.danger,
-    marginBottom: Spacing.SM,
-    alignSelf: "center",
-    width: "100%",
-    maxWidth: 420,
-    textAlign: "left",
-    backgroundColor: colors.white,
-    borderRadius: 10,
-    paddingHorizontal: Spacing.MD,
-    paddingVertical: Spacing.SM,
   },
   createAccountButton: {
     width: "100%",

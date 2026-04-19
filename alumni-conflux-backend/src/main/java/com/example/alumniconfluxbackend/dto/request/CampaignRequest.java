@@ -2,6 +2,7 @@ package com.example.alumniconfluxbackend.dto.request;
 
 import com.example.alumniconfluxbackend.model.details.AccountDetails;
 import com.example.alumniconfluxbackend.util.CampaignType;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 
 public class CampaignRequest {
@@ -10,6 +11,7 @@ public class CampaignRequest {
     private CampaignType type;
     private AccountDetails accountDetails;
     private Double targetAmount;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime deadline;
     private Integer createdById;
 

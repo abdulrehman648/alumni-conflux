@@ -1,11 +1,13 @@
 package com.example.alumniconfluxbackend.dto.request;
 
 import com.example.alumniconfluxbackend.util.TargetAudience;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 
 public class EventRequest {
     private String title;
     private String description;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime eventDate;
     private String location;
     private TargetAudience targetAudience;

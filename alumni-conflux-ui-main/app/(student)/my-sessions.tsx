@@ -14,6 +14,7 @@ import { useAuth } from "../../src/context/AuthContext";
 import { mentorshipService } from "../../src/services/api";
 import colors from "../../src/theme/colors";
 import Toast from "react-native-toast-message";
+import { MessageCircle } from "lucide-react-native";
 
 type SentRequest = {
   id: number;
@@ -21,6 +22,7 @@ type SentRequest = {
   requesterName: string;
   mentorId: number;
   mentorName: string;
+  conversationId?: number;
   status: string;
   message: string;
   createdAt: string;
@@ -83,26 +85,45 @@ export default function MySessions() {
           <FlatList
             data={requests}
             keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.card}>
-                <Text style={styles.name}>{item.mentorName}</Text>
-                <Text style={styles.details}>
-                  Status:{" "}
-                  <Text
-                    style={{
-                      color: getStatusColor(item.status),
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {item.status}
+            renderItem={({ item }) => {
+              const conversationId = item.conversationId;
+
+              return (
+                <View style={styles.card}>
+                  <Text style={styles.name}>{item.mentorName}</Text>
+                  <Text style={styles.details}>
+                    Status:{" "}
+                    <Text
+                      style={{
+                        color: getStatusColor(item.status),
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {item.status}
+                    </Text>
                   </Text>
-                </Text>
-                <Text style={styles.details}>Message: {item.message}</Text>
-                <Text style={styles.date}>
-                  Requested on: {new Date(item.createdAt).toLocaleDateString()}
-                </Text>
-              </View>
-            )}
+                  <Text style={styles.details}>Message: {item.message}</Text>
+                  <Text style={styles.date}>
+                    Requested on:{" "}
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </Text>
+                  {item.status === "ACCEPTED" &&
+                    typeof conversationId === "number" && (
+                      <TouchableOpacity
+                        style={styles.chatButton}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(student)/chat/[conversationId]",
+                            params: { conversationId: String(conversationId) },
+                          })
+                        }
+                      >
+                        <MessageCircle size={16} color="#fff" />
+                      </TouchableOpacity>
+                    )}
+                </View>
+              );
+            }}
           />
         </View>
       )}
@@ -139,4 +160,17 @@ const styles = StyleSheet.create({
   },
   details: { fontSize: 14, marginTop: 4, color: "#333" },
   date: { fontSize: 12, marginTop: 8, color: "#666", fontStyle: "italic" },
+  chatButton: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    backgroundColor: colors.primary,
+
+    padding: 10,
+    borderRadius: 10,
+  },
+  chatButtonText: {
+    color: colors.white,
+    fontFamily: "Poppins-SemiBold",
+    fontSize: FontSizes.XS,
+  },
 });

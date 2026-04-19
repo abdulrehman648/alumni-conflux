@@ -47,6 +47,10 @@ export default function StudentLayout() {
       <Tabs.Screen name="my-sessions" options={hiddenTabScreenOptions} />
       <Tabs.Screen name="bookings" options={hiddenTabScreenOptions} />
       <Tabs.Screen
+        name="chat/[conversationId]"
+        options={hiddenTabScreenOptions}
+      />
+      <Tabs.Screen
         name="mentor-details/[id]"
         options={hiddenTabScreenOptions}
       />

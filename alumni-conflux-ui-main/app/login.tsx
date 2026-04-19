@@ -50,9 +50,6 @@ export default function Login() {
     if (!password.trim()) {
       passwordRef.current?.focus();
       return false;
-    } else if (password.length < 6) {
-      passwordRef.current?.focus();
-      return false;
     }
 
     return true;
@@ -238,12 +235,14 @@ export default function Login() {
               style={styles.loginButton}
             />
 
-            <TouchableOpacity
-              style={styles.forgotContainer}
-              onPress={() => router.push("/forgot-password")}
-            >
-              <Text style={styles.forgotText}>Forgotten Password?</Text>
-            </TouchableOpacity>
+            {selectedRole !== "ADMIN" && (
+              <TouchableOpacity
+                style={styles.forgotContainer}
+                onPress={() => router.push("/forgot-password")}
+              >
+                <Text style={styles.forgotText}>Forgotten Password?</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={styles.footerSpacer} />

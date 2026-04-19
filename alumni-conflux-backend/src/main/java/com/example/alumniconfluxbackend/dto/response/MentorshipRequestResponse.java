@@ -6,6 +6,7 @@ public class MentorshipRequestResponse {
     private String requesterName;
     private Integer mentorId;
     private String mentorName;
+    private Integer conversationId;
     private String status;
     private String message;
     private String createdAt;
@@ -48,6 +49,14 @@ public class MentorshipRequestResponse {
 
     public void setMentorName(String mentorName) {
         this.mentorName = mentorName;
+    }
+
+    public Integer getConversationId() {
+        return conversationId;
+    }
+
+    public void setConversationId(Integer conversationId) {
+        this.conversationId = conversationId;
     }
 
     public String getStatus() {

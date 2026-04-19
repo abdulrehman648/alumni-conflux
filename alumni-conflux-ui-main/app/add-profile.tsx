@@ -287,7 +287,7 @@ export default function AddProfile() {
           subtitle="Help us know you better"
         />
 
-        <AuthCard>
+        <AuthCard style={styles.formCard}>
           <Text style={styles.label}>Institution Name</Text>
           <TextInput
             style={[
@@ -459,9 +459,7 @@ export default function AddProfile() {
                 <Text style={styles.errorText}>{errors.skills}</Text>
               )}
 
-              <Text style={styles.label}>
-                Career Preferences (comma-separated) *
-              </Text>
+              <Text style={styles.label}>Career Preferences</Text>
               <TextInput
                 style={[
                   styles.textInput,
@@ -759,19 +757,22 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
-    padding: Spacing.LG,
-    paddingTop: Spacing.XXL,
-    paddingBottom: Spacing.XXL,
+    paddingHorizontal: Spacing.HUGE,
+    paddingTop: Spacing.HUGE,
+    paddingBottom: Spacing.HUGE,
     alignItems: "center",
     justifyContent: "center",
+  },
+  formCard: {
+    marginTop: Spacing.XL,
+    marginBottom: Spacing.LG,
   },
   label: {
     fontFamily: "Poppins-Medium",
     fontSize: FontSizes.SM,
     color: colors.textDark,
-    marginBottom: Spacing.SM,
     fontWeight: "500",
-    marginTop: Spacing.MD,
+    marginTop: Spacing.SM,
   },
   textInput: {
     width: "100%",
@@ -779,6 +780,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 12,
     padding: Spacing.MD,
+    marginBottom: Spacing.SM,
     fontSize: FontSizes.Base,
     fontFamily: "Poppins-Regular",
     color: colors.textDark,
@@ -823,10 +825,11 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.XS,
     fontWeight: "400",
     color: colors.danger,
-    marginTop: Spacing.MD,
   },
   buttonContainer: {
     width: "100%",
-    marginTop: Spacing.XL,
+    marginTop: Spacing.XXL,
+    paddingHorizontal: Spacing.LG,
+    paddingBottom: Spacing.XL,
   },
 });

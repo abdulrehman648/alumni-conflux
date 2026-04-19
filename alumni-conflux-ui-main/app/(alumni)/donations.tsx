@@ -17,6 +17,7 @@ import {
   FlatList,
   Image,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -89,16 +90,20 @@ export default function AlumniDonationsScreen() {
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
-      quality: 0.7,
+      allowsEditing: false,
+      quality: 0.8,
     });
 
     if (!result.canceled) {
       const asset = result.assets[0];
+      const filename = asset.uri.split("/").pop();
+      const match = /\.(\w+)$/.exec(filename || "");
+      const type = match ? `image/${match[1] === "jpg" ? "jpeg" : match[1]}` : `image/jpeg`;
+
       setScreenshot({
-        uri: asset.uri,
-        type: "image/jpeg",
-        name: "payment_proof.jpg",
+        uri: Platform.OS === "android" ? asset.uri : asset.uri.replace("file://", ""),
+        type: type,
+        name: filename || "payment_proof.jpg",
       });
     }
   };
@@ -139,7 +144,7 @@ export default function AlumniDonationsScreen() {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Failed to submit contribution",
+        text2: error.response?.data?.message || error.message || "Failed to submit contribution",
       });
     } finally {
       setSubmitting(false);
@@ -176,8 +181,8 @@ export default function AlumniDonationsScreen() {
           </Text>
         </View>
         <Text style={styles.amountText}>
-          ${item.collectedAmount.toFixed(0)}
-          {item.targetAmount ? ` / $${item.targetAmount.toFixed(0)}` : ""}
+          Rs.{item.collectedAmount.toFixed(0)}
+          {item.targetAmount ? ` / Rs.${item.targetAmount.toFixed(0)}` : ""}
         </Text>
       </View>
 
@@ -221,11 +226,14 @@ export default function AlumniDonationsScreen() {
           </Text>
         </View>
         <Text style={styles.contributionAmount}>
-          +${item.amount.toFixed(0)}
+          Rs.{item.amount.toFixed(0)}
         </Text>
       </View>
 
       <View style={styles.statusRow}>
+        {item.transactionId && (
+          <Text style={styles.txIdText}>ID: {item.transactionId}</Text>
+        )}
         <View
           style={[
             styles.statusTag,
@@ -262,9 +270,6 @@ export default function AlumniDonationsScreen() {
             {item.status}
           </Text>
         </View>
-        {item.transactionId && (
-          <Text style={styles.txIdText}>ID: {item.transactionId}</Text>
-        )}
       </View>
     </View>
   );
@@ -296,7 +301,7 @@ export default function AlumniDonationsScreen() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Heart size={48} color={colors.textLight} strokeWidth={1.5} />
-              <Text style={styles.emptyText}>No active campaigns found</Text>
+              <Text style={styles.emptyText}>No active donations or funds found</Text>
             </View>
           }
         />
@@ -329,10 +334,10 @@ export default function AlumniDonationsScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.modalTitle}>Contribution</Text>
-                <Text style={styles.modalSubtitle}>
-                  {selectedCampaign?.title}
+                <Text style={styles.modalTitle}>
+                  {selectedCampaign?.type === "DONATION" ? "Make a Donation" : selectedCampaign?.title}
                 </Text>
+
               </View>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <X size={24} color={colors.textDark} />
@@ -343,8 +348,7 @@ export default function AlumniDonationsScreen() {
               {/* Account Details Display */}
               <View style={styles.accountBox}>
                 <View style={styles.accountHeader}>
-                  <Banknote size={16} color={colors.primary} />
-                  <Text style={styles.accountHeaderText}>Bank Details</Text>
+                  <Text style={styles.accountHeaderText}>Bank Details:</Text>
                 </View>
                 <Text style={styles.accountText}>
                   Bank: {selectedCampaign?.accountDetails?.bankName}
@@ -363,7 +367,7 @@ export default function AlumniDonationsScreen() {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Amount ($)</Text>
+                <Text style={styles.label}>Amount (Rs)</Text>
                 <TextInput
                   style={styles.input}
                   keyboardType="numeric"
@@ -468,6 +472,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
+    minHeight: 180,
   },
   cardHeader: {
     flexDirection: "row",
@@ -504,11 +509,11 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: "100%",
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     borderRadius: 4,
   },
   contributeButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     borderRadius: 12,
     paddingVertical: 12,
     flexDirection: "row",
@@ -528,6 +533,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.MD,
     borderWidth: 1,
     borderColor: "#f0f0f0",
+    minHeight: 90,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   contributionTop: {
     flexDirection: "row",
@@ -536,7 +547,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   contributionCampaign: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "700",
     color: colors.textDark,
   },
@@ -544,7 +555,7 @@ const styles = StyleSheet.create({
   contributionAmount: {
     fontSize: 16,
     fontWeight: "800",
-    color: colors.success,
+    color: colors.secondary,
   },
   statusRow: {
     flexDirection: "row",
@@ -583,7 +594,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     padding: Spacing.LG,
-    maxHeight: "85%",
+    paddingBottom: 20,
+    maxHeight: "95%",
   },
   modalHeader: {
     flexDirection: "row",
@@ -611,20 +623,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   accountHeaderText: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: "700",
     color: colors.primary,
   },
-  accountText: { fontSize: 13, color: colors.textDark, marginBottom: 4 },
-  formGroup: { marginBottom: 16 },
+  accountText: { fontSize: 13, color: colors.textDark, marginBottom: 2 },
+  formGroup: { marginBottom: 6 },
   label: {
     fontSize: 13,
     fontWeight: "600",
     color: colors.textDark,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   input: {
     backgroundColor: colors.white,
@@ -669,8 +681,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    marginTop: 20,
-    marginBottom: 30,
+    marginBottom: 4,
   },
   submitButtonText: {
     color: colors.white,

@@ -10,6 +10,7 @@ import com.example.alumniconfluxbackend.repository.AlumniRepository;
 import com.example.alumniconfluxbackend.repository.MentorshipRequestRepository;
 import com.example.alumniconfluxbackend.repository.StudentRepository;
 import com.example.alumniconfluxbackend.repository.UserRepository;
+import com.example.alumniconfluxbackend.service.MentorshipChatService;
 import com.example.alumniconfluxbackend.service.MentorshipService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,15 +36,18 @@ public class MentorshipServiceImpl implements MentorshipService {
     private final MentorshipRequestRepository mentorshipRequestRepository;
     private final StudentRepository studentRepository;
     private final UserRepository userRepository;
+    private final MentorshipChatService mentorshipChatService;
 
     public MentorshipServiceImpl(AlumniRepository alumniRepository,
             MentorshipRequestRepository mentorshipRequestRepository,
             StudentRepository studentRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            MentorshipChatService mentorshipChatService) {
         this.alumniRepository = alumniRepository;
         this.mentorshipRequestRepository = mentorshipRequestRepository;
         this.studentRepository = studentRepository;
         this.userRepository = userRepository;
+        this.mentorshipChatService = mentorshipChatService;
     }
 
     @Override
@@ -148,6 +152,11 @@ public class MentorshipServiceImpl implements MentorshipService {
 
         request.setStatus(status.toUpperCase());
         mentorshipRequestRepository.save(request);
+
+        if ("ACCEPTED".equals(request.getStatus())) {
+            mentorshipChatService.ensureConversationForRequest(request);
+        }
+
         return mapToRequestResponse(request);
     }
 
@@ -291,9 +300,17 @@ public class MentorshipServiceImpl implements MentorshipService {
         res.setRequesterName(request.getRequester().getFullName());
         res.setMentorId(request.getMentor().getId());
         res.setMentorName(request.getMentor().getUser().getFullName());
+        mentorshipChatService.findConversationByRequestId(request.getId())
+            .ifPresent(conversation -> res.setConversationId(conversation.getId()));
         res.setStatus(request.getStatus());
         res.setMessage(request.getMessage());
         res.setCreatedAt(request.getCreatedAt().format(DATE_FORMATTER));
         return res;
+    }
+
+    @Override
+    public java.util.Optional<Integer> findConversationIdByRequestId(Integer requestId) {
+        return mentorshipChatService.findConversationByRequestId(requestId)
+                .map(conversation -> conversation.getId());
     }
 }

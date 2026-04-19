@@ -242,40 +242,7 @@ export default function MentorsScreen() {
             Checking your mentor readiness...
           </Text>
         </View>
-      ) : !academicDetailsComplete ? (
-        <View style={styles.gateBanner}>
-          <View style={styles.recommendationCopy}>
-            <Text style={styles.recommendationTitle}>Add academic details</Text>
-            <Text style={styles.recommendationSubtitle}>
-              Complete your academic profile first to unlock mentor assessment
-              and AI mentor suggestions.
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.recommendationButton}
-            onPress={() => router.push("/(student)/profile" as any)}
-          >
-            <Text style={styles.recommendationButtonText}>Add details</Text>
-          </TouchableOpacity>
-        </View>
-      ) : !assessmentComplete ? (
-        <View style={styles.gateBanner}>
-          <View style={styles.recommendationCopy}>
-            <Text style={styles.recommendationTitle}>
-              Unlock mentor matching
-            </Text>
-            <Text style={styles.recommendationSubtitle}>
-              Complete 3 short tests to get personalized mentor suggestions.
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.recommendationButton}
-            onPress={() => router.push("/(student)/mentor-assessment" as any)}
-          >
-            <Text style={styles.recommendationButtonText}>Start tests</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
+      ) : assessmentComplete ? (
         <View style={styles.recommendationBanner}>
           <View style={styles.recommendationCopy}>
             <Text style={styles.recommendationTitle}>
@@ -298,7 +265,7 @@ export default function MentorsScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      )}
+      ) : null}
 
       {recommendationLoading && (
         <View style={styles.processingCard}>

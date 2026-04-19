@@ -1,13 +1,29 @@
 import axios from "axios";
+import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { AccountDetails, Campaign, Contribution } from "../types/models";
 
 export { AccountDetails, Campaign, Contribution };
 
+const configuredApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+
+const expoHostUri =
+  Constants.expoConfig?.hostUri ||
+  (Constants as any)?.manifest2?.extra?.expoClient?.hostUri ||
+  null;
+
+const expoHost = expoHostUri ? String(expoHostUri).split(":")[0] : null;
+
+const defaultMobileApiBaseUrl = expoHost
+  ? `http://${expoHost}:8080/api`
+  : "http://localhost:8080/api";
+
 const API_BASE_URL =
-  Platform.OS === "web"
+  configuredApiBaseUrl ||
+  (Platform.OS === "web"
     ? "http://localhost:8080/api"
-    : "http://192.168.100.51:8080/api";
+    : defaultMobileApiBaseUrl);
+export { API_BASE_URL };
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -465,6 +481,35 @@ export const mentorshipService = {
     );
     return response.data;
   },
+
+  getConversationByRequestId: async (requestId: number, userId: number) => {
+    const response = await apiClient.get(
+      `/mentorship/conversations/request/${requestId}/${userId}`,
+    );
+    return response.data;
+  },
+
+  getConversationMessages: async (conversationId: number, userId: number) => {
+    const response = await apiClient.get(
+      `/mentorship/conversations/${conversationId}/messages/${userId}`,
+    );
+    return response.data;
+  },
+
+  sendConversationMessage: async (
+    conversationId: number,
+    senderUserId: number,
+    content: string,
+  ) => {
+    const response = await apiClient.post(
+      `/mentorship/conversations/${conversationId}/messages`,
+      {
+        senderUserId,
+        content,
+      },
+    );
+    return response.data;
+  },
 };
 
 // Donations & Funds Service
@@ -528,6 +573,11 @@ export const donationsService = {
     const response = await apiClient.post(
       `/alumni/campaigns/${campaignId}/contribute`,
       formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
     );
     return response.data;
   },
@@ -549,6 +599,41 @@ export const aiService = {
         headers: { "Content-Type": "text/plain" },
       },
     );
+    return response.data;
+  },
+};
+
+// Assessment Completion Service (cross-device sync)
+export const assessmentCompletionService = {
+  getCompletion: async (userId: number) => {
+    try {
+      const response = await apiClient.get(`/assessment/completion/${userId}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
+  saveCompletion: async (
+    userId: number,
+    profileTags: string[],
+    profileSummary: string,
+    assessmentVersion: number,
+  ) => {
+    const response = await apiClient.post("/assessment/completion", {
+      userId,
+      profileTags,
+      profileSummary,
+      assessmentVersion,
+    });
+    return response.data;
+  },
+
+  deleteCompletion: async (userId: number) => {
+    const response = await apiClient.delete(`/assessment/completion/${userId}`);
     return response.data;
   },
 };

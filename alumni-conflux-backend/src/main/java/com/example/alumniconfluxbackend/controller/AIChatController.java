@@ -14,11 +14,6 @@ public class AIChatController {
         this.aiChatService = aiChatService;
     }
 
-    /**
-     * Get career advice for a student.
-     * @param userId The ID of the student asking for advice.
-     * @return AI-generated career advice based on alumni database.
-     */
     @PostMapping("/career-advice/{userId}")
     public ResponseEntity<String> getCareerAdvice(@PathVariable Integer userId, @RequestBody String message) {
         return ResponseEntity.ok(aiChatService.getCareerAdvice(userId, message));

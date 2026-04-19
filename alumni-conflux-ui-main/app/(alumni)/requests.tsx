@@ -15,6 +15,7 @@ import { mentorshipService } from "../../src/services/api";
 import { useAuth } from "../../src/context/AuthContext";
 import Toast from "react-native-toast-message";
 import colors from "@/src/theme/colors";
+import { MessageCircle } from "lucide-react-native";
 
 type MentorshipRequest = {
   id: number;
@@ -22,6 +23,7 @@ type MentorshipRequest = {
   requesterName: string;
   mentorId: number;
   mentorName: string;
+  conversationId?: number;
   status: string;
   message: string;
   createdAt: string;
@@ -104,6 +106,26 @@ export default function Requests() {
               <Text style={styles.topic}>Message: {item.message}</Text>
               <Text style={styles.status}>Status: {item.status}</Text>
 
+              {item.status === "ACCEPTED" &&
+                typeof item.conversationId === "number" && (
+                  <TouchableOpacity
+                    style={styles.chatButton}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(alumni)/chat/[conversationId]" as any,
+                        params: { conversationId: String(item.conversationId) },
+                      })
+                    }
+                  >
+                    <MessageCircle
+                      size={16}
+                      color="#fff"
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text style={styles.btnText}>Open Chat</Text>
+                  </TouchableOpacity>
+                )}
+
               {item.status === "PENDING" && (
                 <View style={styles.actions}>
                   <TouchableOpacity
@@ -167,6 +189,15 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: "row",
     marginTop: 10,
+  },
+
+  chatButton: {
+    backgroundColor: "#0F4C4F",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginTop: 10,
+    alignSelf: "flex-start",
   },
 
   accept: {

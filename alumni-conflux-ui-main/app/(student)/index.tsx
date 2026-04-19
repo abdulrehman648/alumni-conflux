@@ -4,9 +4,7 @@ import {
   Bot,
   Briefcase,
   Calendar,
-  ChevronRight,
   MessageSquare,
-  User,
   Users,
 } from "lucide-react-native";
 import { useEffect, useState } from "react";
@@ -19,6 +17,8 @@ import {
 } from "react-native";
 import { FontSizes, Spacing } from "../../constants/theme";
 import DashboardHeader from "../../src/components/DashboardHeader";
+import DashboardStatCard from "../../src/components/DashboardStatCard";
+import QuickActionCard from "../../src/components/QuickActionCard";
 import { useAuth } from "../../src/context/AuthContext";
 import {
   eventsService,
@@ -67,16 +67,19 @@ export default function StudentHome() {
       icon: Users,
       number: mentorCount,
       label: "Mentors",
+      route: "/(student)/mentors",
     },
     {
       icon: Briefcase,
       number: jobCount,
       label: "Jobs",
+      route: "/(student)/jobs",
     },
     {
       icon: Calendar,
       number: eventCount,
       label: "Events",
+      route: "/(student)/events",
     },
   ];
 
@@ -116,11 +119,7 @@ export default function StudentHome() {
 
   return (
     <View style={styles.container}>
-      <DashboardHeader
-        fullName={fullName}
-        roleLabel="Student"
-        fallbackName="Student"
-      />
+      <DashboardHeader fullName={fullName} fallbackName="Student" />
 
       <ScrollView
         style={styles.scrollView}
@@ -129,24 +128,21 @@ export default function StudentHome() {
       >
         {/* Stats Section */}
         <View style={styles.statsContainer}>
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <View key={index} style={styles.statCard}>
-                <View style={styles.statIconContainer}>
-                  <Icon size={24} color={colors.primary} strokeWidth={1.5} />
-                </View>
-                <Text style={styles.statNumber}>{stat.number}</Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
-              </View>
-            );
-          })}
+          {stats.map((stat, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.statPressable}
+              onPress={() => router.push(stat.route as any)}
+              activeOpacity={0.8}
+            >
+              <DashboardStatCard
+                icon={stat.icon}
+                number={stat.number}
+                label={stat.label}
+              />
+            </TouchableOpacity>
+          ))}
         </View>
-        {statsLoadFailed && (
-          <Text style={styles.statsErrorText}>
-            Unable to load dashboard stats right now.
-          </Text>
-        )}
 
         {/* Quick Actions */}
         <View style={styles.sectionHeader}>
@@ -154,32 +150,15 @@ export default function StudentHome() {
         </View>
 
         <View style={styles.actionsContainer}>
-          {quickActions.map((action, index) => {
-            const Icon = action.icon;
-            return (
-              <TouchableOpacity
-                key={index}
-                style={styles.actionCard}
-                onPress={() => router.push(action.route as any)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.actionLeft}>
-                  <View style={styles.actionIconContainer}>
-                    <Icon size={20} color={colors.white} strokeWidth={1.5} />
-                  </View>
-                  <View style={styles.actionTextContainer}>
-                    <Text style={styles.actionTitle}>{action.title}</Text>
-                    <Text style={styles.actionText}>{action.description}</Text>
-                  </View>
-                </View>
-                <ChevronRight
-                  size={20}
-                  color={colors.textLight}
-                  strokeWidth={1.5}
-                />
-              </TouchableOpacity>
-            );
-          })}
+          {quickActions.map((action, index) => (
+            <QuickActionCard
+              key={index}
+              title={action.title}
+              description={action.description}
+              icon={action.icon}
+              onPress={() => router.push(action.route as any)}
+            />
+          ))}
         </View>
       </ScrollView>
     </View>
@@ -209,46 +188,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.SM,
   },
 
-  statCard: {
+  statPressable: {
     flex: 1,
-    backgroundColor: colors.card,
-    padding: Spacing.MD,
-    borderRadius: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-
-  statIconContainer: {
-    marginBottom: Spacing.SM,
-  },
-
-  statNumber: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.LG,
-    fontWeight: "600",
-    color: colors.primary,
-  },
-
-  statLabel: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.XS,
-    fontWeight: "400",
-    color: colors.textLight,
-    marginTop: Spacing.XS,
-  },
-
-  statsErrorText: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.XS,
-    fontWeight: "400",
-    color: colors.danger,
-    marginTop: -Spacing.XL,
-    marginBottom: Spacing.XXL,
-    textAlign: "center",
   },
 
   sectionHeader: {
@@ -264,53 +205,5 @@ const styles = StyleSheet.create({
 
   actionsContainer: {
     gap: Spacing.MD,
-  },
-
-  actionCard: {
-    backgroundColor: colors.card,
-    padding: Spacing.MD,
-    borderRadius: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-
-  actionLeft: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.MD,
-  },
-
-  actionIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.primary,
-  },
-
-  actionTextContainer: {
-    flex: 1,
-  },
-
-  actionTitle: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.SM,
-    fontWeight: "600",
-    color: colors.textDark,
-  },
-
-  actionText: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.SM,
-    fontWeight: "400",
-    color: colors.textLight,
   },
 });

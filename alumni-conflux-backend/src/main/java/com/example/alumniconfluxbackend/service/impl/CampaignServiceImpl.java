@@ -20,6 +20,8 @@ import com.example.alumniconfluxbackend.util.Role;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -125,19 +127,21 @@ public class CampaignServiceImpl implements CampaignService {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campaign not found"));
 
-        Alumni alumni = alumniRepository.findById(request.getAlumniId())
-                .orElseThrow(() -> new RuntimeException("Alumni not found"));
-
-        String screenshotUrl = fileStorageService.storeFile(screenshot);
+        Alumni alumni = alumniRepository.findByUserId(request.getAlumniId())
+                .orElseThrow(() -> new RuntimeException("Alumni profile not found for this user"));
 
         Contribution contribution = new Contribution();
         contribution.setCampaign(campaign);
         contribution.setAlumni(alumni);
+        try {
+            contribution.setScreenshotData(screenshot.getBytes());
+            contribution.setScreenshotType(screenshot.getContentType());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store screenshot binary", e);
+        }
         contribution.setAmount(request.getAmount());
         contribution.setTransactionId(request.getTransactionId());
         contribution.setNote(request.getNote());
-        contribution.setScreenshotUrl("/api/uploads/profile_pictures/" + screenshotUrl); // Matches FileStorageService
-                                                                                         // current path
         contribution.setStatus(ContributionStatus.PENDING);
 
         contributionRepository.save(contribution);
@@ -145,8 +149,8 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Override
-    public List<ContributionResponse> getAlumniContributions(Integer alumniId) {
-        return contributionRepository.findByAlumniId(alumniId).stream()
+    public List<ContributionResponse> getAlumniContributions(Integer userId) {
+        return contributionRepository.findByAlumniUserId(userId).stream()
                 .map(this::mapToContributionResponse)
                 .collect(Collectors.toList());
     }
@@ -173,7 +177,7 @@ public class CampaignServiceImpl implements CampaignService {
         res.setCampaignTitle(contribution.getCampaign().getTitle());
         res.setAlumniName(contribution.getAlumni().getUser().getFullName());
         res.setAmount(contribution.getAmount());
-        res.setScreenshotUrl(contribution.getScreenshotUrl());
+        res.setScreenshotUrl("/api/campaigns/contribution/" + contribution.getId() + "/screenshot");
         res.setTransactionId(contribution.getTransactionId());
         res.setNote(contribution.getNote());
         res.setStatus(contribution.getStatus());

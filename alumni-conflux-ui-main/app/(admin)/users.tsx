@@ -94,7 +94,7 @@ export default function Users() {
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.editBtn}>
-          <Text style={styles.btnText}>Edit</Text>
+          <Text style={styles.btnText}>View Details</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

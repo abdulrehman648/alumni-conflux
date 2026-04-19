@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -25,11 +26,13 @@ import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../../constants/theme";
 import FloatingAddButton from "../../src/components/FloatingAddButton";
 import NestedScreenHeader from "../../src/components/NestedScreenHeader";
+import SegmentedControl from "../../src/components/SegmentedControl";
 import { useAuth } from "../../src/context/AuthContext";
 import {
   Campaign,
   Contribution,
   donationsService,
+  API_BASE_URL,
 } from "../../src/services/api";
 import colors from "../../src/theme/colors";
 
@@ -46,6 +49,8 @@ export default function AdminDonationsScreen() {
   );
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [loadingContributions, setLoadingContributions] = useState(false);
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -182,7 +187,6 @@ export default function AdminDonationsScreen() {
     <View style={styles.container}>
       <NestedScreenHeader
         title="Donations & Funds"
-        subtitle="Manage fundraising campaigns"
         onBack={() => router.back()}
       />
 
@@ -278,7 +282,9 @@ export default function AdminDonationsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Campaign</Text>
+              <Text style={styles.modalTitle}>
+                {type === "DONATION" ? "Donation" : "Funds"}
+              </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <X size={24} color={colors.textDark} />
               </TouchableOpacity>
@@ -286,48 +292,27 @@ export default function AdminDonationsScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.formGroup}>
-                <View style={styles.typeSelector}>
-                  <TouchableOpacity
-                    style={[
-                      styles.typeOption,
-                      type === "DONATION" && styles.typeOptionActive,
-                    ]}
-                    onPress={() => setType("DONATION")}
-                  >
-                    <Text
-                      style={[
-                        styles.typeOptionText,
-                        type === "DONATION" && styles.typeOptionTextActive,
-                      ]}
-                    >
-                      Donation
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.typeOption,
-                      type === "FUND" && styles.typeOptionActive,
-                    ]}
-                    onPress={() => setType("FUND")}
-                  >
-                    <Text
-                      style={[
-                        styles.typeOptionText,
-                        type === "FUND" && styles.typeOptionTextActive,
-                      ]}
-                    >
-                      Fund
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                <SegmentedControl
+                  options={[
+                    { value: "DONATION", label: "Donation" },
+                    { value: "FUND", label: "Funds" },
+                  ]}
+                  value={type}
+                  onChange={setType}
+                />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Campaign Title</Text>
+                <Text style={styles.label}>
+                  {type === "DONATION" ? "Donation Title" : "Fund Title"}
+                </Text>
                 <TextInput
                   style={styles.input}
                   value={title}
                   onChangeText={setTitle}
+                  placeholder={
+                    type === "DONATION" ? "Donation Title" : "Fund Title"
+                  }
                 />
               </View>
               <View style={styles.formGroup}>
@@ -337,46 +322,46 @@ export default function AdminDonationsScreen() {
                   multiline
                   value={description}
                   onChangeText={setDescription}
-                  placeholder="What is this campaign for?"
+                  placeholder={`What is this ${type === "DONATION" ? "donation" : "fund"} for?`}
                 />
               </View>
 
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Account Details</Text>
                 <TextInput
-                  style={[styles.input, { marginBottom: 8 }]}
-                  value={accountName}
-                  onChangeText={setAccountName}
-                  placeholder="Account Holder Name"
+                  style={[styles.input, { marginBottom: 6 }]}
+                  value={bankName}
+                  onChangeText={setBankName}
+                  placeholder="Bank Name"
                 />
                 <TextInput
-                  style={[styles.input, { marginBottom: 8 }]}
+                  style={[styles.input, { marginBottom: 6 }]}
+                  value={accountName}
+                  onChangeText={setAccountName}
+                  placeholder="Account Title"
+                />
+                <TextInput
+                  style={[styles.input, { marginBottom: 6 }]}
                   value={accountNumber}
                   onChangeText={setAccountNumber}
                   placeholder="Account Number"
                 />
                 <TextInput
-                  style={[styles.input, { marginBottom: 8 }]}
+                  style={styles.input}
                   value={iban}
                   onChangeText={setIban}
                   placeholder="IBAN (Optional)"
                 />
-                <TextInput
-                  style={styles.input}
-                  value={bankName}
-                  onChangeText={setBankName}
-                  placeholder="Bank Name"
-                />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Target Amount (Optional)</Text>
+                <Text style={styles.label}>Amount</Text>
                 <TextInput
                   style={styles.input}
                   keyboardType="numeric"
                   value={targetAmount}
                   onChangeText={setTargetAmount}
-                  placeholder="e.g. 50000"
+                  placeholder="Enter in Ruppess"
                 />
               </View>
 
@@ -388,7 +373,7 @@ export default function AdminDonationsScreen() {
                 {submitting ? (
                   <ActivityIndicator color={colors.white} />
                 ) : (
-                  <Text style={styles.submitButtonText}>Create Campaign</Text>
+                  <Text style={styles.submitButtonText}>Post</Text>
                 )}
               </TouchableOpacity>
             </ScrollView>
@@ -396,7 +381,6 @@ export default function AdminDonationsScreen() {
         </View>
       </Modal>
 
-      {/* Contributions Modal */}
       <Modal
         visible={contributionsModalVisible}
         animationType="slide"
@@ -439,7 +423,7 @@ export default function AdminDonationsScreen() {
                         </Text>
                       </View>
                       <Text style={styles.contributionAmount}>
-                        ${item.amount.toFixed(0)}
+                        Rs. {item.amount.toFixed(0)}
                       </Text>
                     </View>
 
@@ -453,7 +437,21 @@ export default function AdminDonationsScreen() {
                     <TouchableOpacity
                       style={styles.screenshotLink}
                       onPress={() => {
-                        /* Implement image viewer if needed */
+                        if (item.screenshotUrl) {
+                          // The URL in DB is usually "uploads/filename"
+                          // We need full path: API_BASE_URL + "/" + screenshotUrl
+                          const fullUrl = item.screenshotUrl.startsWith('http')
+                            ? item.screenshotUrl
+                            : `${API_BASE_URL.replace('/api', '')}${item.screenshotUrl}`;
+                          setSelectedImage(fullUrl);
+                          setImageViewerVisible(true);
+                        } else {
+                          Toast.show({
+                            type: 'info',
+                            text1: 'No Proof',
+                            text2: 'No screenshot proof was submitted.'
+                          });
+                        }
                       }}
                     >
                       <Text style={styles.screenshotLinkText}>
@@ -517,6 +515,30 @@ export default function AdminDonationsScreen() {
               </View>
             )}
           </View>
+        </View>
+      </Modal>
+
+      {/* Image Viewer Modal */}
+      <Modal
+        visible={imageViewerVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setImageViewerVisible(false)}
+      >
+        <View style={styles.viewerOverlay}>
+          <TouchableOpacity
+            style={styles.closeViewer}
+            onPress={() => setImageViewerVisible(false)}
+          >
+            <X size={32} color={colors.white} />
+          </TouchableOpacity>
+          {selectedImage && (
+            <Image
+              source={{ uri: selectedImage }}
+              style={styles.fullImage}
+              resizeMode="contain"
+            />
+          )}
         </View>
       </Modal>
     </View>
@@ -614,7 +636,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: Spacing.XL,
+    marginBottom: Spacing.MD,
     gap: Spacing.MD,
   },
   modalTitle: {
@@ -629,12 +651,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: "500",
   },
-  formGroup: { marginBottom: Spacing.MD },
+  formGroup: { marginBottom: Spacing.SM },
   label: {
     fontFamily: "Poppins-Medium",
     fontSize: FontSizes.SM,
     color: colors.textDark,
-    marginBottom: 10,
     fontWeight: "600",
   },
   input: {
@@ -647,43 +668,13 @@ const styles = StyleSheet.create({
     color: colors.textDark,
   },
   textArea: { minHeight: 80, textAlignVertical: "top" },
-  typeSelector: { flexDirection: "row", gap: 12 },
-  typeOption: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "#e5e7eb",
-    alignItems: "center",
-    backgroundColor: colors.white,
-  },
-  typeOptionActive: {
-    borderColor: colors.primary,
-    backgroundColor: "#f0f9ff",
-    borderWidth: 2,
-  },
-  typeOptionText: {
-    fontSize: FontSizes.SM,
-    color: colors.textLight,
-    fontWeight: "500",
-  },
-  typeOptionTextActive: {
-    color: colors.primary,
-    fontWeight: "700",
-    fontSize: FontSizes.SM,
-  },
   submitButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: "center",
-    marginTop: 24,
-    marginBottom: 40,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    marginTop: 8,
+    marginBottom: 8,
   },
   submitButtonText: {
     color: colors.white,
@@ -717,7 +708,7 @@ const styles = StyleSheet.create({
   contributionAmount: {
     fontSize: FontSizes.Base,
     fontWeight: "700",
-    color: colors.success,
+    color: colors.secondary,
   },
   contributionNote: {
     fontSize: 13,
@@ -776,4 +767,21 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   statusText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.3 },
+  viewerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeViewer: {
+    position: 'absolute',
+    top: 50,
+    right: 25,
+    zIndex: 10,
+    padding: 10,
+  },
+  fullImage: {
+    width: '95%',
+    height: '80%',
+  },
 });

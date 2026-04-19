@@ -7,7 +7,6 @@ type IconComponent = (props: {
   color?: string;
   size?: number;
   strokeWidth?: number;
-  fill?: string;
 }) => ReactNode;
 
 const tabIconSize = 20;
@@ -35,7 +34,6 @@ export function createTabBarIcon(
       color={color}
       size={iconSize}
       strokeWidth={focused ? 2.2 : strokeWidth}
-      fill={focused ? color : "transparent"}
     />
   );
 }
@@ -59,6 +57,7 @@ export default function BottomTabNavigator({
 
   return (
     <Tabs
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.secondary,

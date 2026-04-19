@@ -9,4 +9,5 @@ import java.util.List;
 public interface ContributionRepository extends JpaRepository<Contribution, Integer> {
     List<Contribution> findByCampaignId(Integer campaignId);
     List<Contribution> findByAlumniId(Integer alumniId);
+    List<Contribution> findByAlumniUserId(Integer userId);
 }

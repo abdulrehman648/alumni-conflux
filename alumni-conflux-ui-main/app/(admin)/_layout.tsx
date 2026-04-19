@@ -1,12 +1,5 @@
 import { Tabs } from "expo-router";
-import {
-  Calendar,
-  Heart,
-  Home,
-  House,
-  Shield,
-  Users,
-} from "lucide-react-native";
+import { Calendar, Heart, Home, Shield, Users } from "lucide-react-native";
 import BottomTabNavigator, {
   createTabBarIcon,
   hiddenTabScreenOptions,
@@ -51,6 +44,7 @@ export default function AdminLayout() {
           tabBarIcon: createTabBarIcon(Users),
         }}
       />
+      <Tabs.Screen name="user-details/[id]" options={hiddenTabScreenOptions} />
     </BottomTabNavigator>
   );
 }

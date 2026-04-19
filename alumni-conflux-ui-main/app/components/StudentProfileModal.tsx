@@ -112,7 +112,7 @@ export default function StudentProfileModal({
                 <ProfileField label="Username" value={profile.username} />
                 <ProfileField label="Email" value={profile.email} />
               </View>
-              
+
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Education</Text>
                 <ProfileField
@@ -237,28 +237,38 @@ export default function StudentProfileModal({
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Skills (comma separated)</Text>
+                <Text style={styles.sectionTitle}>
+                  Skills (comma separated)
+                </Text>
                 <EditField
                   label="Skills"
                   value={editData.skills?.join(", ")}
                   onChangeText={(text) =>
                     setEditData({
                       ...editData,
-                      skills: text.split(",").map((s) => s.trim()).filter(Boolean),
+                      skills: text
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
                     })
                   }
                 />
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Career Preferences (comma separated)</Text>
+                <Text style={styles.sectionTitle}>
+                  Career Preferences (comma separated)
+                </Text>
                 <EditField
                   label="Career Preferences"
                   value={editData.careerPreferences?.join(", ")}
                   onChangeText={(text) =>
                     setEditData({
                       ...editData,
-                      careerPreferences: text.split(",").map((s) => s.trim()).filter(Boolean),
+                      careerPreferences: text
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
                     })
                   }
                 />
@@ -351,7 +361,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 2,
     fontWeight: "600",
     color: colors.text,
   },
@@ -368,7 +378,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 16,
@@ -430,7 +440,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 6,
     borderRadius: 8,
     gap: 8,
   },

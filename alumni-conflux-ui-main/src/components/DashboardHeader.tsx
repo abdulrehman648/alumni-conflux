@@ -5,13 +5,11 @@ import colors from "../theme/colors";
 
 type DashboardHeaderProps = {
   fullName?: string | null;
-  roleLabel: string;
   fallbackName: string;
 };
 
 export default function DashboardHeader({
   fullName,
-  roleLabel,
   fallbackName,
 }: DashboardHeaderProps) {
   return (
@@ -21,7 +19,6 @@ export default function DashboardHeader({
           <User size={20} color={colors.textDark} strokeWidth={2.2} />
         </View>
         <Text style={styles.headerTitle}>{fullName || fallbackName}</Text>
-        <Text style={styles.headerSubtitle}>{roleLabel}</Text>
       </View>
     </View>
   );
@@ -56,11 +53,5 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.textDark,
     textAlign: "left",
-  },
-  headerSubtitle: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.SM,
-    fontWeight: "400",
-    color: colors.textLight,
   },
 });

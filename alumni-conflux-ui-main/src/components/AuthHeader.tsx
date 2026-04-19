@@ -8,7 +8,7 @@ import {
   ImageSourcePropType,
 } from "react-native";
 import colors from "../theme/colors";
-import { FontFamily, FontSizes, Spacing } from "../../constants/theme";
+import { FontSizes, Spacing } from "../../constants/theme";
 
 interface AuthHeaderProps {
   title: string;
@@ -44,20 +44,19 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.XL,
   },
   illustration: {
-    width: 180,
-    height: 180,
-    marginBottom: Spacing.XXXL,
+    width: 160,
+    height: 160,
+    marginBottom: Spacing.HUGE,
   },
   title: {
-    fontFamily: FontFamily.bold,
-    fontSize: 36,
+    fontFamily: "Poppins-Bold",
+    fontSize: 32,
     fontWeight: "700",
     color: colors.primary,
     textAlign: "center",
-    marginBottom: Spacing.MD,
   },
   subtitle: {
-    fontFamily: FontFamily.regular,
+    fontFamily: "Poppins-Regular",
     fontSize: FontSizes.Base,
     fontWeight: "400",
     color: colors.textLight,

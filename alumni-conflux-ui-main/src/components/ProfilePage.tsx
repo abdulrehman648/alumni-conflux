@@ -25,6 +25,8 @@ interface ProfilePageProps {
   academicContent: ReactNode;
   overviewContentStyle?: ViewStyle;
   editContentStyle?: ViewStyle;
+  personalEditContentStyle?: ViewStyle;
+  academicEditContentStyle?: ViewStyle;
 }
 
 export default function ProfilePage({
@@ -39,6 +41,8 @@ export default function ProfilePage({
   academicContent,
   overviewContentStyle,
   editContentStyle,
+  personalEditContentStyle,
+  academicEditContentStyle,
 }: ProfilePageProps) {
   if (loading) {
     return (
@@ -61,7 +65,11 @@ export default function ProfilePage({
         <ScrollView
           style={styles.contentContainer}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.editContent, editContentStyle]}
+          contentContainerStyle={[
+            styles.editContent,
+            editContentStyle,
+            personalEditContentStyle,
+          ]}
         >
           {personalContent}
         </ScrollView>
@@ -79,7 +87,11 @@ export default function ProfilePage({
         <ScrollView
           style={styles.contentContainer}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.editContent, editContentStyle]}
+          contentContainerStyle={[
+            styles.editContent,
+            editContentStyle,
+            academicEditContentStyle,
+          ]}
         >
           {academicContent}
         </ScrollView>

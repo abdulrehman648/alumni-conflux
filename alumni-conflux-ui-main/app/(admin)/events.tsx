@@ -23,8 +23,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
-import Toast from "react-native-toast-message";
 import { FontSizes, Spacing } from "../../constants/theme";
 import FloatingAddButton from "../../src/components/FloatingAddButton";
 import NestedScreenHeader from "../../src/components/NestedScreenHeader";
@@ -79,11 +79,7 @@ export default function AdminEventsScreen() {
       setMyEvents(created);
     } catch (error) {
       console.error("Fetch admin events error:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to fetch events",
-      });
+      Alert.alert("Error", "Failed to fetch events");
     } finally {
       setLoading(false);
     }
@@ -121,11 +117,10 @@ export default function AdminEventsScreen() {
       !location.trim() ||
       !eventDate
     ) {
-      Toast.show({
-        type: "error",
-        text1: "Missing Details",
-        text2: "Title, description, location, and date are required",
-      });
+      Alert.alert(
+        "Missing Details",
+        "Title, description, location, and date are required"
+      );
       return;
     }
 
@@ -139,20 +134,18 @@ export default function AdminEventsScreen() {
         targetAudience,
       });
 
-      Toast.show({
-        type: "success",
-        text1: "Event Created",
-        text2: "Your event request has been submitted",
-      });
+      Alert.alert(
+        "Event Created",
+        "Your event request has been submitted"
+      );
       setModalVisible(false);
       setActiveFilter("myEvents");
       fetchEvents();
     } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Create Failed",
-        text2: error.response?.data?.message || "Could not create event",
-      });
+      Alert.alert(
+        "Create Failed",
+        error.response?.data?.message || "Could not create event"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -160,11 +153,10 @@ export default function AdminEventsScreen() {
 
   const handleUpdateAndApprove = async () => {
     if (!location) {
-      Toast.show({
-        type: "error",
-        text1: "Location Required",
-        text2: "Please allocate a location before approving",
-      });
+      Alert.alert(
+        "Location Required",
+        "Please allocate a location before approving"
+      );
       return;
     }
 
@@ -182,19 +174,14 @@ export default function AdminEventsScreen() {
       // 2. Update status to APPROVED
       await eventsService.updateStatus(selectedEvent.id, "APPROVED");
 
-      Toast.show({
-        type: "success",
-        text1: "Event Approved",
-        text2: "The event is now visible to students",
-      });
+      Alert.alert("Event Approved", "The event is now visible to students");
       setModalVisible(false);
       fetchEvents();
     } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Action Failed",
-        text2: error.response?.data?.message || "Could not approve event",
-      });
+      Alert.alert(
+        "Action Failed",
+        error.response?.data?.message || "Could not approve event"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -203,18 +190,13 @@ export default function AdminEventsScreen() {
   const handleReject = async (eventId: number) => {
     try {
       await eventsService.updateStatus(eventId, "REJECTED");
-      Toast.show({
-        type: "info",
-        text1: "Event Rejected",
-        text2: "The request has been rejected",
-      });
+      Alert.alert("Event Rejected", "The request has been rejected");
       fetchEvents();
     } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Action Failed",
-        text2: error.response?.data?.message || "Could not reject event",
-      });
+      Alert.alert(
+        "Action Failed",
+        error.response?.data?.message || "Could not reject event"
+      );
     }
   };
 
@@ -226,7 +208,7 @@ export default function AdminEventsScreen() {
     const hh = pad(date.getHours());
     const min = pad(date.getMinutes());
     const ss = pad(date.getSeconds());
-    return `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss}`;
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
   };
 
   const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
@@ -486,6 +468,7 @@ export default function AdminEventsScreen() {
                   style={styles.input}
                   value={title}
                   onChangeText={setTitle}
+                  placeholder="Event title"
                 />
               </View>
 

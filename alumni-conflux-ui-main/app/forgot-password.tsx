@@ -1,8 +1,10 @@
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { ShieldCheck, Mail, Lock, Eye, EyeOff } from "lucide-react-native";
 import { useState } from "react";
 import {
-  Alert,
+  Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,8 +13,6 @@ import {
   View,
 } from "react-native";
 import { FontSizes, Spacing } from "../constants/theme";
-import AuthCard from "../src/components/AuthCard";
-import AuthHeader from "../src/components/AuthHeader";
 import RoundedButton from "../src/components/RoundedButton";
 import { authService } from "../src/services/api";
 import colors from "../src/theme/colors";
@@ -28,19 +28,29 @@ export default function ForgotPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [codeError, setCodeError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
+
+  const resetErrors = () => {
+    setEmailError("");
+    setCodeError("");
+    setPasswordError("");
+    setConfirmPasswordError("");
+  };
 
   const handleNextStep = async () => {
-    setError("");
+    resetErrors();
 
     switch (step) {
       case 1:
         if (!email.trim()) {
-          setError("Email is required");
+          setEmailError("Email is required");
           return;
         }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-          setError("Please enter a valid email");
+          setEmailError("Please enter a valid email");
           return;
         }
         setLoading(true);
@@ -56,7 +66,7 @@ export default function ForgotPassword() {
             errData?.details ||
             (typeof errData === "string" ? errData : null) ||
             "Failed to send reset code";
-          Alert.alert("Error", msg, [{ text: "OK" }]);
+          setEmailError(msg);
         } finally {
           setLoading(false);
         }
@@ -64,15 +74,15 @@ export default function ForgotPassword() {
 
       case 2:
         if (!code.trim()) {
-          setError("Verification code is required");
+          setCodeError("Verification code is required");
           return;
         }
         if (code.length !== 6) {
-          setError("Code must be 6 digits");
+          setCodeError("Code must be 6 digits");
           return;
         }
         if (!/^\d+$/.test(code)) {
-          setError("Code must contain only numbers");
+          setCodeError("Code must contain only numbers");
           return;
         }
         setLoading(true);
@@ -81,7 +91,7 @@ export default function ForgotPassword() {
           if (!res.success) throw new Error(res.message);
           setStep(3);
         } catch (err: any) {
-          Alert.alert("Error", err.message || "Invalid code", [{ text: "OK" }]);
+          setCodeError(err.message || "Invalid or expired code");
         } finally {
           setLoading(false);
         }
@@ -89,23 +99,19 @@ export default function ForgotPassword() {
 
       case 3:
         if (!newPassword.trim()) {
-          setError("New password is required");
+          setPasswordError("New password is required");
           return;
         }
         if (newPassword.length < 6) {
-          setError("Password must be at least 6 characters");
-          return;
-        }
-        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
-          setError("Password must have uppercase, lowercase, and number");
+          setPasswordError("Password should contain at least 6 characters.");
           return;
         }
         if (!confirmPassword.trim()) {
-          setError("Please confirm your password");
+          setConfirmPasswordError("Please confirm your password");
           return;
         }
         if (newPassword !== confirmPassword) {
-          setError("Passwords do not match");
+          setConfirmPasswordError("Passwords do not match");
           return;
         }
         setLoading(true);
@@ -114,11 +120,6 @@ export default function ForgotPassword() {
             email.toLowerCase(),
             code,
             newPassword,
-          );
-          Alert.alert(
-            "Password Reset",
-            "Your password has been successfully changed",
-            [{ text: "Cancel", style: "cancel" }, { text: "OK" }],
           );
           setStep(4);
         } catch (err: any) {
@@ -130,7 +131,7 @@ export default function ForgotPassword() {
             errData?.details ||
             (typeof errData === "string" ? errData : null) ||
             "Failed to reset password";
-          Alert.alert("Error", msg, [{ text: "OK" }]);
+          setConfirmPasswordError(msg);
         } finally {
           setLoading(false);
         }
@@ -139,12 +140,41 @@ export default function ForgotPassword() {
   };
 
   const handleBackStep = () => {
-    setError("");
+    resetErrors();
     setStep((step - 1) as PasswordStep);
   };
 
   const handleComplete = () => {
     router.replace("/login");
+  };
+
+  const handleResendCode = async () => {
+    resetErrors();
+
+    if (!email.trim()) {
+      setEmailError("Email is required to resend the code");
+      setStep(1);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await authService.forgotPassword(email.toLowerCase());
+      setCodeError(`Verification code sent to ${email}`);
+    } catch (err: any) {
+      const errData = err.response?.data;
+      const msg =
+        errData?.message ||
+        errData?.error ||
+        errData?.detail ||
+        errData?.details ||
+        (typeof errData === "string" ? errData : null) ||
+        "Failed to resend reset code";
+      setCodeError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderProgressBar = () => {
@@ -160,213 +190,256 @@ export default function ForgotPassword() {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+    <>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <ImageBackground
+        source={require("../assets/images/background.jpeg")}
+        style={styles.container}
+        resizeMode="cover"
       >
-        <AuthHeader
-          title="Reset Password"
-          subtitle={
-            step === 1
-              ? "Enter your email address"
-              : step === 2
-                ? "Enter the verification code"
-                : step === 3
-                  ? "Create a new password"
-                  : "Password reset complete"
-          }
-        />
+        <ScrollView
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Image
+            source={require("../assets/images/alumni-conflux-logo.jpeg")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
 
-        {renderProgressBar()}
-
-        {step === 1 && (
-          <AuthCard>
-            <View style={styles.iconInputContainer}>
-              <Mail size={20} color={colors.primary} strokeWidth={2} />
-              <TextInput
-                style={styles.iconTextInput}
-                placeholder="Email"
-                placeholderTextColor={colors.textLight}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                editable
-              />
+          <View style={styles.formSection}>
+            <View style={styles.titleBlock}>
+              <Text style={styles.title}>Reset Password</Text>
+              {/* <Text style={styles.subtitle}>
+                {step === 1
+                  ? ""
+                  : step === 2
+                    ? "Enter the verification code"
+                    : step === 3
+                      ? "Create a new password"
+                      : "Password reset complete"}
+              </Text> */}
             </View>
-            <Text style={styles.hintText}>
-              We'll send a verification code to this email
-            </Text>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </AuthCard>
-        )}
 
-        {step === 2 && (
-          <AuthCard>
-            <TextInput
-              style={styles.textInput}
-              placeholder="OTP Code "
-              placeholderTextColor={colors.textLight}
-              value={code}
-              onChangeText={(text) => {
-                const numericText = text.replace(/[^0-9]/g, "").slice(0, 6);
-                setCode(numericText);
-              }}
-              keyboardType="number-pad"
-              maxLength={6}
-              editable
-            />
-            <TouchableOpacity style={styles.resendContainer}>
-              <Text style={styles.resendText}>
-                Didn't receive code?{" "}
-                <Text style={styles.resendLink}>Resend</Text>
-              </Text>
-            </TouchableOpacity>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </AuthCard>
-        )}
+            {renderProgressBar()}
 
-        {step === 3 && (
-          <AuthCard>
-            <View style={styles.passwordContainerWithIcon}>
-              <Lock size={20} color={colors.primary} strokeWidth={2} />
-              <TextInput
-                style={styles.iconPasswordInput}
-                placeholder="New Password"
-                placeholderTextColor={colors.textLight}
-                value={newPassword}
-                onChangeText={setNewPassword}
-                secureTextEntry={!showPassword}
-                editable
-              />
-              {newPassword.length > 0 && (
+            {step === 1 && (
+              <View style={styles.formCard}>
+                <View style={styles.inputContainer}>
+                  <View style={styles.iconInputContainer}>
+                    <Mail size={20} color={colors.primary} strokeWidth={2} />
+                    <TextInput
+                      style={styles.iconTextInput}
+                      placeholder="Email"
+                      placeholderTextColor={colors.textLight}
+                      value={email}
+                      onChangeText={(text) => {
+                        setEmail(text);
+                        if (emailError) {
+                          setEmailError("");
+                        }
+                      }}
+                      keyboardType="email-address"
+                      editable={!loading}
+                    />
+                  </View>
+                </View>
+                {!!emailError && (
+                  <Text style={styles.fieldErrorText}>{emailError}</Text>
+                )}
+              </View>
+            )}
+
+            {step === 2 && (
+              <View style={styles.formCard}>
+                <View style={styles.inputContainer}>
+                  <View style={styles.iconInputContainer}>
+                    <Mail size={20} color={colors.primary} strokeWidth={2} />
+                    <TextInput
+                      style={styles.iconTextInput}
+                      placeholder="OTP Code"
+                      placeholderTextColor={colors.textLight}
+                      value={code}
+                      onChangeText={(text) => {
+                        const numericText = text
+                          .replace(/[^0-9]/g, "")
+                          .slice(0, 6);
+                        setCode(numericText);
+                        if (codeError) {
+                          setCodeError("");
+                        }
+                      }}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      editable={!loading}
+                    />
+                  </View>
+                </View>
                 <TouchableOpacity
-                  style={styles.passwordIconButton}
-                  onPress={() => setShowPassword(!showPassword)}
-                  activeOpacity={0.7}
+                  style={styles.resendContainer}
+                  onPress={handleResendCode}
+                  disabled={loading}
                 >
-                  {showPassword ? (
-                    <EyeOff size={20} color={colors.textLight} />
-                  ) : (
-                    <Eye size={20} color={colors.textLight} />
-                  )}
+                  <Text style={styles.resendText}>
+                    Didn't receive code?{" "}
+                    <Text style={styles.resendLink}>Resend</Text>
+                  </Text>
                 </TouchableOpacity>
-              )}
-            </View>
-            <View style={styles.passwordRequirements}>
-              <Text
-                style={[
-                  styles.requirementText,
-                  newPassword.length >= 6 && styles.requirementMet,
-                ]}
-              >
-                {newPassword.length >= 6 ? "✓" : "○"} At least 6 characters
-              </Text>
-              <Text
-                style={[
-                  styles.requirementText,
-                  /(?=.*[a-z])(?=.*[A-Z])/.test(newPassword) &&
-                    styles.requirementMet,
-                ]}
-              >
-                {/(?=.*[a-z])(?=.*[A-Z])/.test(newPassword) ? "✓" : "○"} Mix of
-                uppercase & lowercase
-              </Text>
-              <Text
-                style={[
-                  styles.requirementText,
-                  /\d/.test(newPassword) && styles.requirementMet,
-                ]}
-              >
-                {/\d/.test(newPassword) ? "✓" : "○"} At least one number
-              </Text>
-            </View>
+                {!!codeError && (
+                  <Text style={styles.fieldErrorText}>{codeError}</Text>
+                )}
+              </View>
+            )}
 
-            <View style={styles.passwordContainerWithIcon}>
-              <Lock size={20} color={colors.primary} strokeWidth={2} />
-              <TextInput
-                style={styles.iconPasswordInput}
-                placeholder="Confirm Password"
-                placeholderTextColor={colors.textLight}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!showPassword}
-                editable
-              />
-              {confirmPassword.length > 0 && (
-                <TouchableOpacity
-                  style={styles.passwordIconButton}
-                  onPress={() => setShowPassword(!showPassword)}
-                  activeOpacity={0.7}
-                >
-                  {showPassword ? (
-                    <EyeOff size={20} color={colors.textLight} />
-                  ) : (
-                    <Eye size={20} color={colors.textLight} />
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </AuthCard>
-        )}
+            {step === 3 && (
+              <View style={styles.formCard}>
+                <View style={styles.inputContainer}>
+                  <View
+                    style={[
+                      styles.iconInputContainer,
+                      { marginBottom: Spacing.SM },
+                    ]}
+                  >
+                    <Lock size={20} color={colors.primary} strokeWidth={2} />
+                    <TextInput
+                      style={styles.iconPasswordInput}
+                      placeholder="New Password"
+                      placeholderTextColor={colors.textLight}
+                      value={newPassword}
+                      onChangeText={(text) => {
+                        setNewPassword(text);
+                        if (passwordError) {
+                          setPasswordError("");
+                        }
+                      }}
+                      secureTextEntry={!showPassword}
+                      editable={!loading}
+                    />
+                    {newPassword.length > 0 && (
+                      <TouchableOpacity
+                        style={styles.passwordIconButton}
+                        onPress={() => setShowPassword(!showPassword)}
+                        activeOpacity={0.7}
+                      >
+                        {showPassword ? (
+                          <EyeOff size={20} color={colors.textLight} />
+                        ) : (
+                          <Eye size={20} color={colors.textLight} />
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+                {!!passwordError && (
+                  <Text style={styles.fieldErrorText}>{passwordError}</Text>
+                )}
+                <View style={styles.inputContainer}>
+                  <View style={styles.iconInputContainer}>
+                    <Lock size={20} color={colors.primary} strokeWidth={2} />
+                    <TextInput
+                      style={styles.iconPasswordInput}
+                      placeholder="Confirm Password"
+                      placeholderTextColor={colors.textLight}
+                      value={confirmPassword}
+                      onChangeText={(text) => {
+                        setConfirmPassword(text);
+                        if (confirmPasswordError) {
+                          setConfirmPasswordError("");
+                        }
+                      }}
+                      secureTextEntry={!showPassword}
+                      editable={!loading}
+                    />
+                    {confirmPassword.length > 0 && (
+                      <TouchableOpacity
+                        style={styles.passwordIconButton}
+                        onPress={() => setShowPassword(!showPassword)}
+                        activeOpacity={0.7}
+                      >
+                        {showPassword ? (
+                          <EyeOff size={20} color={colors.textLight} />
+                        ) : (
+                          <Eye size={20} color={colors.textLight} />
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+                {!!confirmPasswordError && (
+                  <Text style={styles.fieldErrorText}>
+                    {confirmPasswordError}
+                  </Text>
+                )}
+              </View>
+            )}
 
-        {step === 4 && (
-          <AuthCard>
-            <View style={styles.successContainer}>
-              <ShieldCheck size={64} color={colors.success} strokeWidth={1.5} />
-              <Text style={styles.successTitle}>All Set!</Text>
-              <Text style={styles.successSubtitle}>
-                Your password has been successfully reset.
-              </Text>
-            </View>
-          </AuthCard>
-        )}
+            {step === 4 && (
+              <View style={styles.formCard}>
+                <View style={styles.successContainer}>
+                  <ShieldCheck
+                    size={64}
+                    color={colors.success}
+                    strokeWidth={1.5}
+                  />
+                  <Text style={styles.successTitle}>All Set!</Text>
+                  <Text style={styles.successSubtitle}>
+                    Your password has been successfully reset.
+                  </Text>
+                </View>
+              </View>
+            )}
 
-        {step !== 4 && (
-          <View style={styles.buttonContainer}>
-            <RoundedButton
-              title={
-                step === 1 ? "Next" : step === 2 ? "Verify" : "Reset Password"
-              }
-              onPress={handleNextStep}
-              variant="primary"
-              size="large"
-              loading={loading}
-            />
-            {step > 1 && (
+            {step !== 4 && (
+              <View style={styles.buttonContainer}>
+                <RoundedButton
+                  title={
+                    step === 1
+                      ? "Send OTP"
+                      : step === 2
+                        ? "Verify"
+                        : "Reset Password"
+                  }
+                  onPress={handleNextStep}
+                  variant="primary"
+                  size="small"
+                  loading={loading}
+                  style={styles.primaryAction}
+                />
+                {step > 1 && (
+                  <RoundedButton
+                    title="Back"
+                    onPress={handleBackStep}
+                    variant="outline"
+                    size="small"
+                    style={styles.secondaryAction}
+                  />
+                )}
+              </View>
+            )}
+
+            {step === 4 && (
               <RoundedButton
-                title="Back"
-                onPress={handleBackStep}
-                variant="secondary"
-                size="large"
-                style={styles.backButtonAction}
+                title="Back to Sign In"
+                onPress={handleComplete}
+                variant="primary"
+                size="small"
+                style={styles.primaryAction}
               />
             )}
-          </View>
-        )}
 
-        {step === 4 && (
-          <RoundedButton
-            title="Back to Sign In"
-            onPress={handleComplete}
-            variant="primary"
-            size="large"
-            style={styles.loginButton}
-          />
-        )}
-
-        {step === 1 && (
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Remember your password? </Text>
-            <TouchableOpacity onPress={() => router.replace("/login")}>
-              <Text style={styles.signupLink}>Sign In</Text>
-            </TouchableOpacity>
+            {step === 1 && (
+              <View style={styles.signupContainer}>
+                <Text style={styles.signupText}>Remember your password? </Text>
+                <TouchableOpacity onPress={() => router.replace("/login")}>
+                  <Text style={styles.signupLink}>Sign In</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-        )}
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </ImageBackground>
+    </>
   );
 }
 
@@ -377,18 +450,50 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
-    padding: Spacing.LG,
-    paddingBottom: Spacing.XXL,
+    padding: Spacing.MD,
+    paddingBottom: Spacing.HUGE,
+    paddingTop: 90,
+    justifyContent: "flex-start",
     alignItems: "center",
-    justifyContent: "center",
+  },
+  formSection: {
+    width: "100%",
+    flexGrow: 1,
+    alignItems: "center",
+  },
+  logo: {
+    width: 200,
+    height: 150,
+    marginTop: -40,
+    marginBottom: Spacing.LG,
+  },
+  titleBlock: {
+    width: "100%",
+    maxWidth: 420,
+    alignItems: "center",
+    marginBottom: Spacing.XS,
+  },
+  title: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 24,
+    fontWeight: "600",
+    color: colors.textDark,
+    textAlign: "center",
+  },
+  subtitle: {
+    marginTop: Spacing.LG,
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.Base,
+    color: colors.textLight,
+    textAlign: "center",
   },
   progressContainer: {
     width: "100%",
+    maxWidth: 420,
     marginBottom: Spacing.XL,
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.MD,
-    paddingHorizontal: Spacing.LG,
   },
   progressBarBackground: {
     flex: 1,
@@ -396,6 +501,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E5D6C3",
     borderRadius: 2,
     overflow: "hidden",
+    marginTop: Spacing.MD,
   },
   progressBarFill: {
     height: "100%",
@@ -409,100 +515,57 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     minWidth: 25,
   },
+  formCard: {
+    width: "100%",
+    maxWidth: 420,
+  },
+  inputContainer: {
+    width: "100%",
+    marginBottom: Spacing.XS,
+    marginTop: Spacing.SM,
+  },
   iconInputContainer: {
     width: "100%",
-    flexDirection: "row" as const,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.white,
     borderRadius: 12,
     paddingHorizontal: Spacing.MD,
     gap: Spacing.MD,
-    marginBottom: Spacing.MD,
+    backgroundColor: colors.white,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 4,
   },
   iconTextInput: {
     flex: 1,
-    height: 48,
-    paddingVertical: 0,
-    paddingHorizontal: 0,
-    fontSize: FontSizes.Base,
-    fontFamily: "Poppins-Regular",
-    color: colors.textDark,
-    textAlignVertical: "center",
-  },
-  passwordContainerWithIcon: {
-    width: "100%",
-    flexDirection: "row" as const,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: Spacing.MD,
-    gap: Spacing.MD,
-    marginBottom: Spacing.MD,
-  },
-  iconPasswordInput: {
-    flex: 1,
-    height: 48,
-    paddingVertical: 0,
-    paddingHorizontal: 0,
-    fontSize: FontSizes.Base,
-    fontFamily: "Poppins-Regular",
-    color: colors.textDark,
-    textAlignVertical: "center",
-  },
-  passwordIconButton: {
-    padding: 0,
-  },
-  textInput: {
-    width: "100%",
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
     padding: Spacing.MD,
     fontSize: FontSizes.Base,
     fontFamily: "Poppins-Regular",
     color: colors.textDark,
-    marginBottom: Spacing.MD,
   },
-  hintText: {
+  iconPasswordInput: {
+    flex: 1,
+    padding: Spacing.MD,
+    fontSize: FontSizes.Base,
     fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.XS,
-    fontWeight: "400",
-    color: colors.textLight,
-    marginBottom: Spacing.LG,
+    color: colors.textDark,
   },
-  passwordRequirements: {
-    marginTop: Spacing.MD,
-    paddingTop: Spacing.MD,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    marginBottom: Spacing.LG,
-  },
-  requirementText: {
-    fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.SM,
-    fontWeight: "400",
-    color: colors.textLight,
-    marginBottom: Spacing.SM,
-  },
-  requirementMet: {
-    color: colors.success,
+  passwordIconButton: {
+    padding: Spacing.SM,
   },
   resendContainer: {
-    marginTop: Spacing.MD,
+    marginTop: Spacing.XS,
   },
   resendText: {
     fontFamily: "Poppins-Regular",
     fontSize: FontSizes.SM,
     fontWeight: "400",
     color: colors.textLight,
-    textAlign: "center",
+    textAlign: "right",
   },
   resendLink: {
     fontFamily: "Poppins-SemiBold",
@@ -519,7 +582,6 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.LG,
     fontWeight: "600",
     color: colors.textDark,
-    marginBottom: Spacing.SM,
     textAlign: "center",
   },
   successSubtitle: {
@@ -532,21 +594,24 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     width: "100%",
-    marginTop: Spacing.XL,
+    maxWidth: 420,
     gap: Spacing.MD,
+    marginTop: Spacing.MD,
   },
-  backButtonAction: {
-    marginTop: 0,
-  },
-  loginButton: {
+  primaryAction: {
     width: "100%",
-    marginTop: Spacing.XL,
+    maxWidth: 420,
+  },
+  secondaryAction: {
+    width: "100%",
+    maxWidth: 420,
   },
   signupContainer: {
     width: "100%",
+    maxWidth: 420,
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: Spacing.MD,
+    marginTop: Spacing.SM,
   },
   signupText: {
     fontFamily: "Poppins-Regular",
@@ -555,15 +620,18 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   signupLink: {
-    fontFamily: "Poppins-SemiBold",
-    fontSize: FontSizes.Base,
+    fontFamily: "Poppins-Medium",
+    fontSize: FontSizes.SM,
     fontWeight: "600",
     color: colors.primary,
   },
-  errorText: {
+  fieldErrorText: {
     fontFamily: "Poppins-Regular",
-    fontSize: FontSizes.SM,
-    color: colors.danger || "#FF4D4D",
-    marginTop: Spacing.SM,
+    fontSize: FontSizes.XS,
+    fontWeight: "400",
+    color: colors.danger,
+    marginTop: Spacing.XS,
+    marginBottom: Spacing.SM,
+    paddingHorizontal: Spacing.SM,
   },
 });

@@ -48,9 +48,10 @@ export type MentorAssessmentState = {
   currentQuestionIndex: number;
   answers: Record<string, MentorAssessmentAnswer>;
   completed: boolean;
-  version?: string;
+  version?: string | number;
   completedAt?: string;
   profileTags?: string[];
+  profileSummary?: string;
   recommendations?: MentorAssessmentRecommendation[];
 };
 
@@ -477,18 +478,52 @@ export const getMentorAssessmentStorageKey = (userId: string) =>
 export const loadMentorAssessmentState = async (
   userId: string,
 ): Promise<MentorAssessmentState | null> => {
+  // First check local AsyncStorage
   const rawState = await AsyncStorage.getItem(
     getMentorAssessmentStorageKey(userId),
   );
-  if (!rawState) {
-    return null;
+  if (rawState) {
+    try {
+      return JSON.parse(rawState) as MentorAssessmentState;
+    } catch {
+      // Continue to backend check if local parse fails
+    }
   }
 
+  // If not found locally, try to restore from backend (cross-device sync)
   try {
-    return JSON.parse(rawState) as MentorAssessmentState;
-  } catch {
-    return null;
+    const { assessmentCompletionService } = await import("./api");
+    const backendCompletion = await assessmentCompletionService.getCompletion(
+      Number(userId),
+    );
+    if (backendCompletion) {
+      console.log("📱 Restoring assessment from backend (new device sync)");
+      // Reconstruct minimal state from backend data
+      const restoredState: MentorAssessmentState = {
+        currentTestIndex: 0,
+        currentQuestionIndex: 0,
+        answers: {},
+        completed: true,
+        version: backendCompletion.assessmentVersion || 1,
+        completedAt: backendCompletion.completedAt,
+        profileTags: backendCompletion.profileTags
+          ? backendCompletion.profileTags.split(",")
+          : [],
+        profileSummary: backendCompletion.profileSummary,
+        recommendations: [],
+      };
+      // Cache it locally for faster access
+      await AsyncStorage.setItem(
+        getMentorAssessmentStorageKey(userId),
+        JSON.stringify(restoredState),
+      );
+      return restoredState;
+    }
+  } catch (error) {
+    console.log("No backend assessment data found (first time or error):", error);
   }
+
+  return null;
 };
 
 export const saveMentorAssessmentState = async (
@@ -499,6 +534,25 @@ export const saveMentorAssessmentState = async (
     getMentorAssessmentStorageKey(userId),
     JSON.stringify(state),
   );
+
+  // Sync completed assessments to backend so they persist across devices
+  if (state.completed && state.profileTags && state.profileTags.length > 0) {
+    try {
+      const { assessmentCompletionService } = await import("./api");
+      await assessmentCompletionService.saveCompletion(
+        Number(userId),
+        state.profileTags,
+        state.profileSummary || "",
+        typeof state.version === "string"
+          ? parseInt(state.version, 10)
+          : (state.version || 1),
+      );
+      console.log("✅ Assessment completion synced to backend");
+    } catch (error) {
+      console.error("Failed to sync assessment completion to backend:", error);
+      // Don't fail the local save if backend sync fails
+    }
+  }
 };
 
 export const clearMentorAssessmentState = async (userId: string) => {
