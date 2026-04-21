@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { ChevronRight, Code, MessageSquare } from "lucide-react-native";
 import {
   ActivityIndicator,
@@ -7,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FontSizes, Spacing } from "../../constants/theme";
 import NestedScreenHeader from "../../src/components/NestedScreenHeader";
 import { useAuth } from "../../src/context/AuthContext";
@@ -35,6 +36,11 @@ export default function MentorsScreen() {
   );
   const [matchTags, setMatchTags] = useState<string[]>([]);
   const canAccessMentors = academicDetailsComplete && assessmentComplete;
+  const showTopMentorSuggestions =
+    assessmentComplete &&
+    recommendedMentors.length > 0 &&
+    !recommendationLoading;
+  const autoRefreshTriggeredRef = useRef(false);
 
   const hasAcademicDetails = useCallback((profile: any) => {
     const hasText = (value: unknown) =>
@@ -69,7 +75,10 @@ export default function MentorsScreen() {
         );
         setAcademicDetailsComplete(hasAcademicDetails(studentProfile));
       } catch (error) {
-        console.error("Failed to verify academic details:", error);
+        const status = (error as any)?.response?.status;
+        if (status && status !== 404 && status !== 500) {
+          console.error("Failed to verify academic details:", error);
+        }
         setAcademicDetailsComplete(false);
       } finally {
         setAcademicLoading(false);
@@ -110,7 +119,7 @@ export default function MentorsScreen() {
             await saveMentorAssessmentState(userId, {
               ...storedState,
               recommendations: normalized,
-            });
+            }, { syncToBackend: false });
           }
         }
       } catch (error) {
@@ -122,6 +131,25 @@ export default function MentorsScreen() {
 
     hydrateAssessment();
   }, [userId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (
+        !autoRefreshTriggeredRef.current &&
+        userId &&
+        academicDetailsComplete &&
+        assessmentComplete &&
+        !recommendationLoading
+      ) {
+        autoRefreshTriggeredRef.current = true;
+        handleRequestRecommendations();
+      }
+
+      return () => {
+        autoRefreshTriggeredRef.current = false;
+      };
+    }, [userId, academicDetailsComplete, assessmentComplete]),
+  );
 
   const handleRequestRecommendations = async () => {
     if (!userId) {
@@ -161,7 +189,7 @@ export default function MentorsScreen() {
         completedAt: new Date().toISOString(),
         profileTags: matchTags,
         recommendations: normalized,
-      });
+      }, { syncToBackend: false });
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message ||
@@ -243,28 +271,61 @@ export default function MentorsScreen() {
           </Text>
         </View>
       ) : assessmentComplete ? (
-        <View style={styles.recommendationBanner}>
-          <View style={styles.recommendationCopy}>
-            <Text style={styles.recommendationTitle}>
-              Your top mentor matches
+        <>
+          <View style={styles.recommendationBanner}>
+            <View style={styles.recommendationCopy}>
+              <Text style={styles.recommendationTitle}>
+                Your top mentor matches
+              </Text>
+              <Text style={styles.recommendationSubtitle}>
+                Ranked from your completed tests and profile.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.recommendationButton,
+                recommendationLoading && styles.recommendationButtonDisabled,
+              ]}
+              onPress={handleRequestRecommendations}
+              disabled={recommendationLoading}
+            >
+              <Text style={styles.recommendationButtonText}>
+                {recommendationLoading ? "Updating" : "Refresh match"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>Your profile highlights</Text>
+            <Text style={styles.summaryText}>
+              {matchTags.length > 0
+                ? matchTags
+                    .slice(0, 4)
+                    .map((tag) => tag.replace(/-/g, " "))
+                    .join(" · ")
+                : "Profile captured"}
             </Text>
-            <Text style={styles.recommendationSubtitle}>
-              Ranked from your completed tests and profile.
+            <Text style={styles.summaryMeta}>
+              Assessment complete · Saved for your mentor match
             </Text>
           </View>
-          <TouchableOpacity
-            style={[
-              styles.recommendationButton,
-              recommendationLoading && styles.recommendationButtonDisabled,
-            ]}
-            onPress={handleRequestRecommendations}
-            disabled={recommendationLoading}
-          >
-            <Text style={styles.recommendationButtonText}>
-              {recommendationLoading ? "Updating" : "Refresh match"}
-            </Text>
-          </TouchableOpacity>
-        </View>
+
+          {showTopMentorSuggestions ? (
+            <View style={styles.topMentorSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Top mentor suggestions</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Best matches from your assessment
+                </Text>
+              </View>
+              <View style={styles.recommendationsList}>
+                {recommendedMentors
+                  .slice(0, 3)
+                  .map((mentor) => renderMentorCard(mentor))}
+              </View>
+            </View>
+          ) : null}
+        </>
       ) : null}
 
       {recommendationLoading && (
@@ -286,7 +347,8 @@ export default function MentorsScreen() {
 
       {canAccessMentors &&
         recommendedMentors.length > 0 &&
-        !recommendationLoading && (
+        !recommendationLoading &&
+        !showTopMentorSuggestions && (
           <View style={styles.recommendationsSection}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Recommended for you</Text>
@@ -413,6 +475,7 @@ const styles = StyleSheet.create({
 
   recommendedAvatarContainer: {
     backgroundColor: colors.secondary,
+    marginTop: -6,
   },
 
   avatarLetter: {
@@ -602,6 +665,38 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
 
+  summaryCard: {
+    marginHorizontal: Spacing.LG,
+    marginBottom: Spacing.LG,
+    padding: Spacing.MD,
+    borderRadius: 16,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  summaryTitle: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: FontSizes.SM,
+    fontWeight: "600",
+    color: colors.textDark,
+  },
+
+  summaryText: {
+    marginTop: Spacing.XS,
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.SM,
+    color: colors.textDark,
+    lineHeight: 20,
+  },
+
+  summaryMeta: {
+    marginTop: Spacing.XS,
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.XS,
+    color: colors.textLight,
+  },
+
   processingCard: {
     marginHorizontal: Spacing.LG,
     marginBottom: Spacing.LG,
@@ -641,6 +736,10 @@ const styles = StyleSheet.create({
   },
 
   recommendationsSection: {
+    marginBottom: Spacing.LG,
+  },
+
+  topMentorSection: {
     marginBottom: Spacing.LG,
   },
 

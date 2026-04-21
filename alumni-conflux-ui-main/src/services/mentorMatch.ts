@@ -520,7 +520,10 @@ export const loadMentorAssessmentState = async (
       return restoredState;
     }
   } catch (error) {
-    console.log("No backend assessment data found (first time or error):", error);
+    console.log(
+      "No backend assessment data found (first time or error):",
+      error,
+    );
   }
 
   return null;
@@ -529,23 +532,33 @@ export const loadMentorAssessmentState = async (
 export const saveMentorAssessmentState = async (
   userId: string,
   state: MentorAssessmentState,
+  options?: {
+    syncToBackend?: boolean;
+  },
 ) => {
+  const normalizedProfileTags =
+    state.profileTags && state.profileTags.length > 0
+      ? state.profileTags
+      : buildProfileTags(state);
+
   await AsyncStorage.setItem(
     getMentorAssessmentStorageKey(userId),
     JSON.stringify(state),
   );
 
   // Sync completed assessments to backend so they persist across devices
-  if (state.completed && state.profileTags && state.profileTags.length > 0) {
+  if (state.completed && options?.syncToBackend !== false) {
     try {
       const { assessmentCompletionService } = await import("./api");
+      const parsedVersion =
+        typeof state.version === "string"
+          ? Number.parseInt(state.version, 10)
+          : state.version;
       await assessmentCompletionService.saveCompletion(
         Number(userId),
-        state.profileTags,
+        normalizedProfileTags,
         state.profileSummary || "",
-        typeof state.version === "string"
-          ? parseInt(state.version, 10)
-          : (state.version || 1),
+        Number.isFinite(parsedVersion) ? (parsedVersion as number) : 1,
       );
       console.log("✅ Assessment completion synced to backend");
     } catch (error) {

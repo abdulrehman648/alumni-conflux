@@ -75,13 +75,19 @@ export default function StudentProfileScreen() {
       setUsername(data.username || "");
       setEmail(data.email || "");
       setInstitutionName(data.institutionName || "");
-      setExpectedGraduationYear(data.expectedGraduationYear ? String(data.expectedGraduationYear) : "");
+      setExpectedGraduationYear(
+        data.expectedGraduationYear ? String(data.expectedGraduationYear) : "",
+      );
       setDepartment(data.department || "");
       setDegreeProgram(data.degreeProgram || "");
       setMajor(data.major || "");
-      setCurrentSemester(data.currentSemester ? String(data.currentSemester) : "");
+      setCurrentSemester(
+        data.currentSemester ? String(data.currentSemester) : "",
+      );
       setSkills(Array.isArray(data.skills) ? data.skills : []);
-      setCareerPreferences(Array.isArray(data.careerPreferences) ? data.careerPreferences : []);
+      setCareerPreferences(
+        Array.isArray(data.careerPreferences) ? data.careerPreferences : [],
+      );
     } catch (error) {
       console.error(error);
     } finally {
@@ -100,8 +106,18 @@ export default function StudentProfileScreen() {
   const validateAcademic = () => {
     const e: any = {};
     if (!institutionName.trim()) e.institutionName = "Required";
+    if (!expectedGraduationYear.trim()) e.expectedGraduationYear = "Required";
+    else if (!/^\d{4}$/.test(expectedGraduationYear))
+      e.expectedGraduationYear = "Enter a valid year";
+    if (!department.trim()) e.department = "Required";
+    if (!degreeProgram.trim()) e.degreeProgram = "Required";
     if (!major.trim()) e.major = "Required";
+    if (!currentSemester.trim()) e.currentSemester = "Required";
+    else if (isNaN(Number(currentSemester)))
+      e.currentSemester = "Must be a number";
     if (skills.length === 0) e.skills = "Add some skills";
+    if (careerPreferences.length === 0)
+      e.careerPreferences = "Add at least one career preference";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -110,7 +126,11 @@ export default function StudentProfileScreen() {
     if (!validatePersonal()) return;
     try {
       setUpdating(true);
-      await apiClient.put(`/student/${userId}`, { fullName: name, username, email });
+      await apiClient.put(`/student/${userId}`, {
+        fullName: name,
+        username,
+        email,
+      });
       await fetchProfile();
       setCurrentView("overview");
       Toast.show({ type: "success", text1: "Saved" });
@@ -157,35 +177,59 @@ export default function StudentProfileScreen() {
       academicTitle="Edit Academic Profile"
       overviewContent={
         <View style={styles.profileCard}>
-          <Text style={styles.avatarLabel}>Profile</Text>
           <View style={styles.avatarPlaceholder}>
-             <Text style={styles.avatarPlaceholderText}>{profile?.fullName?.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.avatarPlaceholderText}>
+              {profile?.fullName?.charAt(0).toUpperCase()}
+            </Text>
           </View>
           <Text style={styles.profileName}>{profile?.fullName}</Text>
-          <Text style={styles.profileRole}>Student Member</Text>
+          <Text style={styles.profileRole}>Student</Text>
 
           <View style={styles.menuSection}>
-            <TouchableOpacity style={styles.menuItem} onPress={() => setCurrentView("editPersonal")}>
-              <View style={styles.menuIconContainer}><Edit size={18} color={colors.white} /></View>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setCurrentView("editPersonal")}
+            >
+              <View style={styles.menuIconContainer}>
+                <Edit size={18} color={colors.white} />
+              </View>
               <Text style={styles.menuItemText}>Personal Profile</Text>
               <ChevronRight size={20} color={colors.textLight} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => setCurrentView("editAcademic")}>
-              <View style={styles.menuIconContainer}><Edit size={18} color={colors.white} /></View>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setCurrentView("editAcademic")}
+            >
+              <View style={styles.menuIconContainer}>
+                <Edit size={18} color={colors.white} />
+              </View>
               <Text style={styles.menuItemText}>Academic Profile</Text>
               <ChevronRight size={20} color={colors.textLight} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/(student)/mentor-assessment" as any)}>
-              <View style={styles.menuIconContainer}><Edit size={18} color={colors.white} /></View>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.push("/(student)/mentor-assessment" as any)}
+            >
+              <View style={styles.menuIconContainer}>
+                <Edit size={18} color={colors.white} />
+              </View>
               <Text style={styles.menuItemText}>Take Assessment</Text>
               <ChevronRight size={20} color={colors.textLight} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => { logout(); router.replace("/login"); }}>
-              <View style={styles.menuIconContainer}><LogOut size={18} color={colors.white} /></View>
-              <Text style={styles.menuItemText}>Sign Out</Text>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                logout();
+                router.replace("/login");
+              }}
+            >
+              <View style={styles.menuIconContainer}>
+                <LogOut size={18} color={colors.white} />
+              </View>
+              <Text style={styles.menuItemText}>Logout</Text>
               <ChevronRight size={20} color={colors.textLight} />
             </TouchableOpacity>
           </View>
@@ -195,61 +239,225 @@ export default function StudentProfileScreen() {
         <View style={styles.formContainer}>
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Full Name</Text>
-            <TextInput style={[styles.input, errors.name && styles.inputError]} value={name} onChangeText={setName} />
+            <TextInput
+              style={[styles.input, errors.name && styles.inputError]}
+              value={name}
+              onChangeText={setName}
+            />
             {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
           </View>
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Username</Text>
-            <TextInput style={[styles.input, errors.username && styles.inputError]} value={username} onChangeText={setUsername} />
+            <TextInput
+              style={[styles.input, errors.username && styles.inputError]}
+              value={username}
+              onChangeText={setUsername}
+            />
           </View>
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Email</Text>
             <TextInput style={styles.input} value={email} editable={false} />
           </View>
-          <RoundedButton title={updating ? "Saving..." : "Save"} size="small" variant="primary" onPress={handleSavePersonal} loading={updating} style={styles.saveBtn} />
+          <RoundedButton
+            title={updating ? "Saving..." : "Save"}
+            size="small"
+            variant="primary"
+            onPress={handleSavePersonal}
+            loading={updating}
+            style={styles.saveBtn}
+          />
         </View>
       }
       academicContent={
         <View style={styles.formContainer}>
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Institution</Text>
-            <TextInput style={[styles.input, errors.institutionName && styles.inputError]} value={institutionName} onChangeText={setInstitutionName} />
+            <TextInput
+              style={[
+                styles.input,
+                errors.institutionName && styles.inputError,
+              ]}
+              value={institutionName}
+              onChangeText={setInstitutionName}
+            />
+            {errors.institutionName && (
+              <Text style={styles.errorText}>{errors.institutionName}</Text>
+            )}
+          </View>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Expected Graduation Year</Text>
+            <TextInput
+              style={[
+                styles.input,
+                errors.expectedGraduationYear && styles.inputError,
+              ]}
+              value={expectedGraduationYear}
+              onChangeText={setExpectedGraduationYear}
+              keyboardType="number-pad"
+              maxLength={4}
+            />
+            {errors.expectedGraduationYear && (
+              <Text style={styles.errorText}>
+                {errors.expectedGraduationYear}
+              </Text>
+            )}
+          </View>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Department</Text>
+            <TextInput
+              style={[styles.input, errors.department && styles.inputError]}
+              value={department}
+              onChangeText={setDepartment}
+            />
+            {errors.department && (
+              <Text style={styles.errorText}>{errors.department}</Text>
+            )}
+          </View>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Degree Program</Text>
+            <TextInput
+              style={[styles.input, errors.degreeProgram && styles.inputError]}
+              value={degreeProgram}
+              onChangeText={setDegreeProgram}
+            />
+            {errors.degreeProgram && (
+              <Text style={styles.errorText}>{errors.degreeProgram}</Text>
+            )}
           </View>
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Major</Text>
-            <TextInput style={[styles.input, errors.major && styles.inputError]} value={major} onChangeText={setMajor} />
+            <TextInput
+              style={[styles.input, errors.major && styles.inputError]}
+              value={major}
+              onChangeText={setMajor}
+            />
+            {errors.major && (
+              <Text style={styles.errorText}>{errors.major}</Text>
+            )}
           </View>
           <View style={styles.row}>
             <View style={[styles.fieldContainer, { flex: 1 }]}>
-               <Text style={styles.fieldLabel}>Grad Year</Text>
-               <TextInput style={styles.input} value={expectedGraduationYear} onChangeText={setExpectedGraduationYear} keyboardType="number-pad" />
+              <Text style={styles.fieldLabel}>Grad Year</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  errors.expectedGraduationYear && styles.inputError,
+                ]}
+                value={expectedGraduationYear}
+                onChangeText={setExpectedGraduationYear}
+                keyboardType="number-pad"
+              />
             </View>
             <View style={[styles.fieldContainer, { flex: 1 }]}>
-               <Text style={styles.fieldLabel}>Semester</Text>
-               <TextInput style={styles.input} value={currentSemester} onChangeText={setCurrentSemester} keyboardType="number-pad" />
+              <Text style={styles.fieldLabel}>Semester</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  errors.currentSemester && styles.inputError,
+                ]}
+                value={currentSemester}
+                onChangeText={setCurrentSemester}
+                keyboardType="number-pad"
+              />
+              {errors.currentSemester && (
+                <Text style={styles.errorText}>{errors.currentSemester}</Text>
+              )}
             </View>
           </View>
           <View style={styles.skillsSection}>
             <Text style={styles.fieldLabel}>Skills</Text>
             <View style={styles.tagInputRow}>
-              <TextInput style={styles.tagInput} value={newSkill} onChangeText={setNewSkill} placeholder="skill" />
-              <TouchableOpacity style={styles.tagAddBtn} onPress={() => {
-                if (newSkill.trim() && !skills.includes(newSkill.trim())) {
-                  setSkills([...skills, newSkill.trim()]);
-                  setNewSkill("");
-                }
-              }}><Plus size={20} color={colors.white} /></TouchableOpacity>
+              <TextInput
+                style={styles.tagInput}
+                value={newSkill}
+                onChangeText={setNewSkill}
+                placeholder="skill"
+              />
+              <TouchableOpacity
+                style={styles.tagAddBtn}
+                onPress={() => {
+                  if (newSkill.trim() && !skills.includes(newSkill.trim())) {
+                    setSkills([...skills, newSkill.trim()]);
+                    setNewSkill("");
+                  }
+                }}
+              >
+                <Plus size={20} color={colors.white} />
+              </TouchableOpacity>
             </View>
             <View style={styles.tagsArea}>
               {skills.map((s, i) => (
                 <View key={i} style={styles.tag}>
                   <Text style={styles.tagText}>{s}</Text>
-                  <TouchableOpacity onPress={() => setSkills(skills.filter((_, idx)=>idx!==i))}><X size={14} color={colors.primary} /></TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setSkills(skills.filter((_, idx) => idx !== i))
+                    }
+                  >
+                    <X size={14} color={colors.primary} />
+                  </TouchableOpacity>
                 </View>
               ))}
             </View>
+            {errors.skills && (
+              <Text style={styles.errorText}>{errors.skills}</Text>
+            )}
           </View>
-          <RoundedButton title={updating ? "Saving..." : "Save"} size="small" variant="primary" onPress={handleSaveAcademic} loading={updating} style={styles.saveBtn} />
+          <View style={styles.skillsSection}>
+            <Text style={styles.fieldLabel}>Career Preferences</Text>
+            <View style={styles.tagInputRow}>
+              <TextInput
+                style={styles.tagInput}
+                value={newCareerPreference}
+                onChangeText={setNewCareerPreference}
+                placeholder="preference"
+              />
+              <TouchableOpacity
+                style={styles.tagAddBtn}
+                onPress={() => {
+                  if (
+                    newCareerPreference.trim() &&
+                    !careerPreferences.includes(newCareerPreference.trim())
+                  ) {
+                    setCareerPreferences([
+                      ...careerPreferences,
+                      newCareerPreference.trim(),
+                    ]);
+                    setNewCareerPreference("");
+                  }
+                }}
+              >
+                <Plus size={20} color={colors.white} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.tagsArea}>
+              {careerPreferences.map((pref, i) => (
+                <View key={i} style={styles.tag}>
+                  <Text style={styles.tagText}>{pref}</Text>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setCareerPreferences(
+                        careerPreferences.filter((_, idx) => idx !== i),
+                      )
+                    }
+                  >
+                    <X size={14} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+            {errors.careerPreferences && (
+              <Text style={styles.errorText}>{errors.careerPreferences}</Text>
+            )}
+          </View>
+          <RoundedButton
+            title={updating ? "Saving..." : "Save"}
+            size="small"
+            variant="primary"
+            onPress={handleSaveAcademic}
+            loading={updating}
+            style={styles.saveBtn}
+          />
         </View>
       }
     />
@@ -257,29 +465,136 @@ export default function StudentProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  profileCard: { backgroundColor: colors.card, borderRadius: 20, padding: Spacing.LG, alignItems: "center", marginBottom: Spacing.LG, borderWidth: 1, borderColor: colors.border },
-  avatarLabel: { fontFamily: "Poppins-Bold", fontSize: FontSizes.XL, color: colors.textDark, marginBottom: Spacing.MD, alignSelf: "flex-start" },
-  avatarPlaceholder: { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", marginBottom: Spacing.MD },
-  avatarPlaceholderText: { fontFamily: "Poppins-Bold", fontSize: 32, color: colors.white },
-  profileName: { fontFamily: "Poppins-SemiBold", fontSize: FontSizes.LG, color: colors.textDark },
-  profileRole: { fontFamily: "Poppins-Regular", fontSize: FontSizes.SM, color: colors.textLight, marginBottom: Spacing.LG },
-  menuSection: { width: "100%", gap: Spacing.SM, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 },
-  menuItem: { flexDirection: "row", alignItems: "center", paddingVertical: Spacing.MD, paddingHorizontal: 10, borderRadius: 12 },
-  menuIconContainer: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", marginRight: 15 },
-  menuItemText: { flex: 1, fontFamily: "Poppins-Medium", fontSize: FontSizes.Base, color: colors.textDark },
-  formContainer: { padding: Spacing.LG, backgroundColor: colors.card, borderRadius: 16 },
+  profileCard: {
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    padding: Spacing.LG,
+    alignItems: "center",
+    marginBottom: Spacing.LG,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  avatarLabel: {
+    fontFamily: "Poppins-Bold",
+    fontSize: FontSizes.XL,
+    color: colors.textDark,
+    marginBottom: Spacing.MD,
+    alignSelf: "flex-start",
+  },
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.MD,
+    marginTop: Spacing.HUGE,
+  },
+  avatarPlaceholderText: {
+    fontFamily: "Poppins-Bold",
+    fontSize: 32,
+    color: colors.white,
+  },
+  profileName: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: FontSizes.LG,
+    color: colors.textDark,
+  },
+  profileRole: {
+    fontFamily: "Poppins-Regular",
+    fontSize: FontSizes.SM,
+    color: colors.textLight,
+    marginBottom: Spacing.LG,
+  },
+  menuSection: {
+    width: "100%",
+    gap: Spacing.SM,
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 10,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.MD,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+  },
+  menuIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 15,
+  },
+  menuItemText: {
+    flex: 1,
+    fontFamily: "Poppins-Medium",
+    fontSize: FontSizes.Base,
+    color: colors.textDark,
+  },
+  formContainer: {
+    padding: Spacing.LG,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+  },
   fieldContainer: { gap: 6, marginBottom: Spacing.MD },
   row: { flexDirection: "row", gap: Spacing.MD },
-  fieldLabel: { fontFamily: "Poppins-Medium", fontSize: 13, color: colors.textDark },
-  input: { backgroundColor: "#f9fafb", borderRadius: 12, padding: Spacing.MD, borderWidth: 1, borderColor: colors.border, fontFamily: "Poppins-Regular" },
+  fieldLabel: {
+    fontFamily: "Poppins-Medium",
+    fontSize: 13,
+    color: colors.textDark,
+  },
+  input: {
+    backgroundColor: "#f9fafb",
+    borderRadius: 12,
+    padding: Spacing.MD,
+    borderWidth: 1,
+    borderColor: colors.border,
+    fontFamily: "Poppins-Regular",
+  },
   inputError: { borderColor: colors.danger },
-  errorText: { fontFamily: "Poppins-Regular", fontSize: 11, color: colors.danger },
+  errorText: {
+    fontFamily: "Poppins-Regular",
+    fontSize: 11,
+    color: colors.danger,
+  },
   saveBtn: { marginTop: Spacing.LG },
   skillsSection: { marginBottom: Spacing.MD },
   tagInputRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
-  tagInput: { flex: 1, backgroundColor: "#f9fafb", borderRadius: 12, paddingHorizontal: 15, borderWidth: 1, borderColor: colors.border },
-  tagAddBtn: { backgroundColor: colors.primary, width: 45, height: 45, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  tagInput: {
+    flex: 1,
+    backgroundColor: "#f9fafb",
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  tagAddBtn: {
+    backgroundColor: colors.primary,
+    width: 45,
+    height: 45,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   tagsArea: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  tag: { backgroundColor: "#f0f7f7", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, flexDirection: "row", alignItems: "center", gap: 6 },
-  tagText: { fontFamily: "Poppins-Medium", fontSize: 12, color: colors.primary },
+  tag: {
+    backgroundColor: "#f0f7f7",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  tagText: {
+    fontFamily: "Poppins-Medium",
+    fontSize: 12,
+    color: colors.primary,
+  },
 });

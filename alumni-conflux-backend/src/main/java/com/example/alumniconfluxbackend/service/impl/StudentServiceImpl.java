@@ -84,7 +84,13 @@ public class StudentServiceImpl implements StudentService {
     public StudentResponse getStudentByUserId(Integer userId) {
 
         Student student = studentRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+            .orElseGet(() -> {
+                Student emptyStudent = new Student();
+                User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+                emptyStudent.setUser(user);
+                return emptyStudent;
+            });
 
         return mapToResponse(student);
     }
@@ -97,12 +103,15 @@ public class StudentServiceImpl implements StudentService {
         res.setInstitutionName(student.getInstitutionName());
         res.setExpectedGraduationYear(student.getExpectedGraduationYear());
 
-        res.setDepartment(student.getDetails().getDepartment());
-        res.setDegreeProgram(student.getDetails().getDegreeProgram());
-        res.setMajor(student.getDetails().getMajor());
-        res.setCurrentSemester(student.getDetails().getCurrentSemester());
-        res.setSkills(student.getDetails().getSkills());
-        res.setCareerPreferences(student.getDetails().getCareerPreferences());
+        StudentDetails details = student.getDetails();
+        if (details != null) {
+            res.setDepartment(details.getDepartment());
+            res.setDegreeProgram(details.getDegreeProgram());
+            res.setMajor(details.getMajor());
+            res.setCurrentSemester(details.getCurrentSemester());
+            res.setSkills(details.getSkills());
+            res.setCareerPreferences(details.getCareerPreferences());
+        }
 
         if (student.getUser() != null) {
             res.setFullName(student.getUser().getFullName());

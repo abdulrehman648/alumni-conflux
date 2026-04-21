@@ -450,7 +450,8 @@ export default function MentorAssessmentScreen() {
         <Sparkles size={42} color={colors.primary} strokeWidth={1.6} />
         <Text style={styles.centeredTitle}>Complete your profile first</Text>
         <Text style={styles.centeredText}>
-          Add your student details to unlock mentor assessment tests and AI mentor matching.
+          Add your student details to unlock mentor assessment tests and AI
+          mentor matching.
         </Text>
         <TouchableOpacity
           style={styles.primaryButton}
@@ -528,115 +529,20 @@ export default function MentorAssessmentScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.resultsHero}>
-            <Sparkles size={22} color={colors.white} strokeWidth={1.8} />
-            <View style={styles.resultsHeroCopy}>
-              <Text style={styles.resultsHeroTitle}>
-                Top mentor suggestions
-              </Text>
-              <Text style={styles.resultsHeroText}>
-                We matched your profile against available alumni and ranked your
-                best fits.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>Your profile highlights</Text>
-            <Text style={styles.summaryText}>
-              {profileTags.length > 0
-                ? profileTags
-                    .slice(0, 4)
-                    .map((tag) => tag.replace(/-/g, " "))
-                    .join(" · ")
-                : "Profile captured"}
-            </Text>
-            <Text style={styles.summaryMeta}>
-              Completed in {assessmentTests.length} steps · Saved for resume
-              later
-            </Text>
-          </View>
-
-          {generatingMatch && recommendations.length === 0 ? (
-            <View style={styles.matchingCard}>
-              <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={styles.matchingText}>
-                Running your AI mentor match...
-              </Text>
-            </View>
-          ) : null}
-
-          {matchError ? (
-            <View style={styles.errorCard}>
-              <Text style={styles.errorText}>{matchError}</Text>
-            </View>
-          ) : null}
-
-          {recommendations.slice(0, 3).map((mentor, index) => {
-            const mentorName = mentor.name || mentor.fullName || "Mentor";
-            const mentorRole =
-              mentor.industry || mentor.designation || "Available mentor";
-            const mentorCompany = mentor.currentCompany || mentor.company || "";
-            const mentorId =
-              mentor.id ?? mentor.alumniId ?? `${mentorName}-${index}`;
-
-            return (
-              <TouchableOpacity
-                key={mentorId}
-                style={styles.recommendationCard}
-                onPress={() => {
-                  if (mentorId) {
-                    router.push(`/(student)/mentor-details/${mentorId}`);
-                  }
-                }}
-                activeOpacity={0.75}
-              >
-                <View style={styles.recommendationRank}>
-                  <Text style={styles.recommendationRankText}>{index + 1}</Text>
-                </View>
-                <View style={styles.recommendationBody}>
-                  <View style={styles.recommendationTopRow}>
-                    <View style={styles.recommendationTextBlock}>
-                      <Text style={styles.recommendationName}>
-                        {mentorName}
-                      </Text>
-                      <Text style={styles.recommendationRole}>
-                        {mentorRole}
-                      </Text>
-                    </View>
-                    <View style={styles.matchBadge}>
-                      <Text style={styles.matchBadgeText}>
-                        {mentor.matchScore ?? 0}% match
-                      </Text>
-                    </View>
-                  </View>
-                  {mentorCompany ? (
-                    <Text style={styles.recommendationCompany}>
-                      {mentorCompany}
-                    </Text>
-                  ) : null}
-                  {Array.isArray(mentor.matchReasons) &&
-                  mentor.matchReasons.length > 0 ? (
-                    <Text style={styles.recommendationReason}>
-                      {mentor.matchReasons.join(" · ")}
-                    </Text>
-                  ) : null}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-
+        <View style={styles.centeredState}>
+          <Sparkles size={42} color={colors.primary} strokeWidth={1.6} />
+          <Text style={styles.centeredTitle}>Assessment completed</Text>
+          <Text style={styles.centeredText}>
+            Your mentor matching assessment is complete. Open Find a Mentor to
+            view your profile highlights and top suggestions.
+          </Text>
           <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => router.push("/(student)/mentors")}
+            style={styles.primaryButton}
+            onPress={() => router.push("/(student)/mentors" as any)}
           >
-            <Text style={styles.secondaryButtonText}>Explore all mentors</Text>
+            <Text style={styles.primaryButtonText}>Find a Mentor</Text>
           </TouchableOpacity>
-        </ScrollView>
+        </View>
       </View>
     );
   }
